@@ -9,7 +9,8 @@
       "Bash(railway --version)",
       "Bash(gh auth:*)",
       "Bash(git --version)",
-      "Bash(git -C C:/Users/blake/Code/ArcadeBattle remote -v)"
+      "Bash(git -C C:/Users/blake/Code/ArcadeBattle remote -v)",
+      "Bash(npm run:*)"
     ]
   }
 }

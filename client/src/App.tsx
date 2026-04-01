@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket } from './context/SocketContext.tsx';
 import { GameProvider, useGame } from './context/GameContext.tsx';
-import { useNavigate, Routes, Route, useParams } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 import type { LobbyState, TransitionData, MatchEndData } from '@arcade-battle/shared';
 import HomeScreen from './screens/HomeScreen.tsx';
 import LobbyScreen from './screens/LobbyScreen.tsx';
@@ -14,7 +14,6 @@ import './App.css';
 function AppRoutes() {
   const socket = useSocket();
   const game = useGame();
-  const navigate = useNavigate();
 
   useEffect(() => {
     socket.on('lobby:state', (state: LobbyState) => {

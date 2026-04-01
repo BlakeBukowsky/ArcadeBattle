@@ -108,7 +108,6 @@ export default function FencingGame() {
 
         // Sword
         const sy = p.y + swordY(p.guard);
-        const swordX = p.facing > 0 ? sx + PLAYER_W : sx - SWORD_LEN;
         const sLen = p.attacking ? SWORD_LEN + 10 : SWORD_LEN;
 
         c.fillStyle = p.attacking ? '#ffffff' : '#cccccc';

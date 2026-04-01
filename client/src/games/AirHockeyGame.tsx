@@ -57,7 +57,6 @@ export default function AirHockeyGame() {
       canvas.height = state.canvasHeight;
       const W = state.canvasWidth, H = state.canvasHeight;
       const goalTop = (H - state.goalWidth) / 2;
-      const goalBot = goalTop + state.goalWidth;
 
       // Table
       c.fillStyle = '#1a3a2e';

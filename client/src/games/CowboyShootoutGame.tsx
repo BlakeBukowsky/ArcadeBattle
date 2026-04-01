@@ -3,7 +3,7 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 
 const WINDOW_W = 50, WINDOW_H = 55;
 const WINDOW_Y_START = 50, WINDOW_ROW_GAP = 90;
-const WINDOW_ROWS = 2, WINDOW_COLS = 4;
+const WINDOW_COLS = 4;
 const WINDOW_MARGIN = 80;
 const PLAYER_W = 30, PLAYER_H = 50;
 const PLAYER_Y = 430;
@@ -23,10 +23,6 @@ interface CowboyState {
 
 function windowCenterX(col: number): number {
   return WINDOW_MARGIN + col * ((800 - WINDOW_MARGIN * 2) / (WINDOW_COLS - 1));
-}
-
-function windowCenterY(row: number): number {
-  return WINDOW_Y_START + row * WINDOW_ROW_GAP + WINDOW_H / 2;
 }
 
 export default function CowboyShootoutGame() {
