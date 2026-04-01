@@ -3,7 +3,7 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
-const PLAYER_W = 30, PLAYER_H = 40, BALL_R = 12, NET_W = 6;
+const PLAYER_W = 40, PLAYER_H = 52, BALL_R = 12, NET_W = 6;
 
 interface PlayerState { x: number; y: number; }
 interface VolleyState {

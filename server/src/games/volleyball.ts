@@ -4,13 +4,14 @@ const W = 800, H = 500;
 const FLOOR_Y = H - 30;
 const NET_X = W / 2, NET_W = 6, NET_H = 140;
 const NET_TOP = FLOOR_Y - NET_H;
-const PLAYER_W = 30, PLAYER_H = 40;
+const PLAYER_W = 40, PLAYER_H = 52;
 const BALL_R = 12;
 const GRAVITY = 0.35;
-const JUMP_POWER = -9;
+const JUMP_POWER = -10;
 const MOVE_SPEED = 5;
 const BALL_BOUNCE = 0.75;
-const PLAYER_BOUNCE = 8;
+const PLAYER_BOUNCE = 5;
+const BALL_ACCEL = 0.0003; // ball speeds up over time
 const POINTS_TO_WIN = 5;
 const TICK_RATE = 1000 / 60;
 const SERVE_DELAY = 800;
@@ -50,7 +51,7 @@ export const volleyballGame: ServerGameModule = {
         [p1]: { x: W / 4 - PLAYER_W / 2, y: FLOOR_Y - PLAYER_H, vy: 0, onGround: true },
         [p2]: { x: (3 * W) / 4 - PLAYER_W / 2, y: FLOOR_Y - PLAYER_H, vy: 0, onGround: true },
       },
-      ball: { x: W / 4, y: 100, vx: 2, vy: 0 },
+      ball: { x: W / 4, y: 100, vx: 1, vy: 0 },
       scores: { [p1]: 0, [p2]: 0 },
       canvasWidth: W,
       canvasHeight: H,
@@ -63,11 +64,14 @@ export const volleyballGame: ServerGameModule = {
       const serveLeft = state.serveCount % 2 === 0;
       state.ball.x = serveLeft ? W / 4 : (3 * W) / 4;
       state.ball.y = 100;
-      state.ball.vx = serveLeft ? 1 : -1;
+      state.ball.vx = serveLeft ? 0.8 : -0.8;
       state.ball.vy = 0;
       state.serveCount++;
+      rallyTicks = 0;
       state.paused = false;
     }
+
+    let rallyTicks = 0;
 
     const interval = setInterval(() => {
       if (!running || state.paused) {
@@ -106,9 +110,11 @@ export const volleyballGame: ServerGameModule = {
         }
       }
 
-      // Ball physics
+      // Ball physics — accelerate over rally duration
+      rallyTicks++;
+      const speedMult = 1 + rallyTicks * BALL_ACCEL;
       state.ball.vy += GRAVITY;
-      state.ball.x += state.ball.vx;
+      state.ball.x += state.ball.vx * speedMult;
       state.ball.y += state.ball.vy;
 
       // Wall bounces

@@ -20,6 +20,7 @@ interface RhythmState {
 
 const ARROW_SIZE = 36, LANE_WIDTH = 50;
 const LANE_DIRS: Direction[] = ['left', 'down', 'up', 'right'];
+const DIR_COLORS: Record<string, string> = { up: '#00ff88', down: '#4488ff', left: '#ff4444', right: '#ffcc00' };
 
 function dirToLane(dir: Direction): number { return LANE_DIRS.indexOf(dir); }
 
@@ -109,10 +110,11 @@ export default function RhythmGame() {
         for (let i = 0; i < LANE_DIRS.length; i++) {
           const laneDir = LANE_DIRS[i];
           const lx = lanesX + i * LANE_WIDTH + LANE_WIDTH / 2;
+          const dirColor = DIR_COLORS[laneDir];
           const pressed = isMe && pressRef.current.dir === laneDir && pressAge < 120;
-          drawArrowShape(c, lx, state.hitZoneY, ARROW_SIZE, laneDir, pressed ? '#ffffff88' : '#ffffff18');
+          drawArrowShape(c, lx, state.hitZoneY, ARROW_SIZE, laneDir, pressed ? dirColor + 'cc' : dirColor + '33');
           if (pressed) {
-            c.fillStyle = '#ffffff11';
+            c.fillStyle = dirColor + '11';
             c.fillRect(lanesX + i * LANE_WIDTH, 0, LANE_WIDTH, H);
           }
         }
@@ -126,8 +128,10 @@ export default function RhythmGame() {
           let color: string;
           if (arrowState === 'missed') color = '#ff444444';
           else {
+            const baseColor = DIR_COLORS[arrow.direction];
             const dist = Math.abs(arrow.y - state.hitZoneY);
-            color = dist < 16 ? '#00ff88' : dist < 40 ? '#ffff00' : '#ffffff';
+            // Brighten as it approaches the hit zone
+            color = dist < 20 ? baseColor : baseColor + 'aa';
           }
           drawArrowShape(c, ax, arrow.y, ARROW_SIZE, arrow.direction, color);
         }

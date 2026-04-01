@@ -1,29 +1,29 @@
 import type { ServerGameModule, MatchContext, GameInstance } from '@arcade-battle/shared';
 
-const SENTENCE_COUNT = 5;
+const SENTENCE_COUNT = 3;
 const TICK_RATE = 1000 / 15;
 
 const SENTENCES = [
-  'the quick brown fox jumps over the lazy dog',
-  'pack my box with five dozen liquor jugs',
-  'how vexingly quick daft zebras jump',
-  'the five boxing wizards jump quickly',
-  'bright vixens jump dozy fowl quack',
-  'two driven jocks help fax my big quiz',
-  'the jay pig fox zebra and my wolves quack',
-  'quick zephyrs blow vexing daft jim',
-  'sphinx of black quartz judge my vow',
-  'waltz bad nymph for quick jigs vex',
-  'glib jocks quiz nymph to vex dwarf',
-  'jackdaws love my big sphinx of quartz',
-  'crazy frederick bought many very exquisite opal jewels',
-  'we promptly judged antique ivory buckles for the next prize',
-  'a mad boxer shot a quick gloved jab to the jaw of his dizzy opponent',
-  'the lazy major was fixing cupboard hinges with glue',
-  'grumpy wizards make toxic brew for the evil queen and jack',
-  'just keep examining every low bid quoted for zinc etchings',
-  'all questions asked by five watched experts amaze the judge',
-  'few black taxis drive up major roads on quiet hazy nights',
+  'the quick brown fox',
+  'pack my box with five jugs',
+  'bright vixens jump quickly',
+  'sphinx of black quartz',
+  'waltz bad nymph for jigs',
+  'glib jocks quiz nymph',
+  'two driven jocks help fax',
+  'quick zephyrs blow daft',
+  'jump over the lazy dog',
+  'judge my vow of silence',
+  'five boxing wizards jump',
+  'how vexingly quick zebras',
+  'grumpy wizards make brew',
+  'major roads on quiet nights',
+  'ivory buckles for the prize',
+  'love my big sphinx',
+  'fix the cupboard hinges',
+  'keep examining every bid',
+  'black taxis drive up fast',
+  'all experts amaze the judge',
 ];
 
 interface PlayerState {
