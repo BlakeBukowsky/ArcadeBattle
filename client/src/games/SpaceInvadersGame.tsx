@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
+import { drawSprite, drawLabel } from '../lib/sprites.js';
 
-const PLAYER_W = 24, PLAYER_H = 16, PLAYER_Y = 460;
+const PLAYER_W = 24, PLAYER_H = 16;
 const INVADER_W = 22, INVADER_H = 16, INVADER_SPACING_X = 36, INVADER_SPACING_Y = 28;
 const BULLET_W = 3, BULLET_H = 10;
+const PLAYER_Y = 460;
 
 interface Invader { col: number; row: number; alive: boolean; }
 interface Bullet { x: number; y: number; }
@@ -52,13 +54,12 @@ export default function SpaceInvadersGame() {
       const state = stateRef.current;
       if (!canvas || !c || !state) { animId = requestAnimationFrame(draw); return; }
 
-      const W = state.canvasWidth, H = state.canvasHeight;
-      const HALF = W / 2;
+      const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#0a0a1a';
-      c.fillRect(0, 0, W, H);
+      c.fillStyle = '#0a0a1a'; c.fillRect(0, 0, W, H);
 
+      // Divider
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
       c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
 
@@ -71,19 +72,17 @@ export default function SpaceInvadersGame() {
         c.save();
         c.beginPath(); c.rect(ox, 0, HALF, H); c.clip();
 
-        // Label + kill count
-        c.fillStyle = '#ffffff66'; c.font = '12px monospace'; c.textAlign = 'center';
-        c.fillText(isMe ? 'YOU' : 'OPPONENT', ox + HALF / 2, 18);
-        c.fillText(`${p.killCount}/${state.totalInvaders}`, ox + HALF / 2, 34);
+        drawLabel(c, isMe ? 'YOU' : 'OPPONENT', ox + HALF / 2, 18, { color: '#ffffff66', font: '12px monospace' });
+        drawLabel(c, `${p.killCount}/${state.totalInvaders}`, ox + HALF / 2, 34, { color: '#ffffff66', font: '12px monospace' });
 
         // Invaders
         for (const inv of p.invaders) {
           if (!inv.alive) continue;
           const ix = ox + p.invaderX + inv.col * INVADER_SPACING_X;
           const iy = 40 + inv.row * INVADER_SPACING_Y;
-          c.fillStyle = inv.row < 1 ? '#ff4444' : inv.row < 2 ? '#ffaa00' : '#44ff44';
-          c.fillRect(ix, iy, INVADER_W, INVADER_H);
-          // Simple pixel pattern
+          const invColor = inv.row < 1 ? '#ff4444' : inv.row < 2 ? '#ffaa00' : '#44ff44';
+          drawSprite(c, 'invader', ix, iy, INVADER_W, INVADER_H, { color: invColor });
+          // Eyes
           c.fillStyle = '#00000044';
           c.fillRect(ix + 3, iy + 3, 4, 4);
           c.fillRect(ix + INVADER_W - 7, iy + 3, 4, 4);
@@ -91,22 +90,23 @@ export default function SpaceInvadersGame() {
 
         // Player
         if (p.alive) {
-          c.fillStyle = isMe ? '#00ff88' : '#ff4488';
-          c.fillRect(ox + p.x, PLAYER_Y, PLAYER_W, PLAYER_H);
+          drawSprite(c, 'ship', ox + p.x, PLAYER_Y, PLAYER_W, PLAYER_H, {
+            color: isMe ? '#00ff88' : '#ff4488', skin: pid,
+          });
           // Cannon
-          c.fillRect(ox + p.x + PLAYER_W / 2 - 2, PLAYER_Y - 6, 4, 6);
+          drawSprite(c, 'ship', ox + p.x + PLAYER_W / 2 - 2, PLAYER_Y - 6, 4, 6, {
+            color: isMe ? '#00ff88' : '#ff4488',
+          });
         }
 
-        // Bullets
-        c.fillStyle = '#ffffff';
+        // Player bullets
         for (const b of p.bullets) {
-          c.fillRect(ox + b.x, b.y, BULLET_W, BULLET_H);
+          drawSprite(c, 'bullet', ox + b.x, b.y, BULLET_W, BULLET_H, { color: '#ffffff' });
         }
 
         // Invader bullets
-        c.fillStyle = '#ff6666';
         for (const b of p.invaderBullets) {
-          c.fillRect(ox + b.x, b.y, BULLET_W, BULLET_H);
+          drawSprite(c, 'bullet', ox + b.x, b.y, BULLET_W, BULLET_H, { color: '#ff6666' });
         }
 
         c.restore();

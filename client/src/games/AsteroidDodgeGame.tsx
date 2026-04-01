@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
+import { drawSprite, drawSpriteCircle, drawLabel } from '../lib/sprites.js';
 
 const PLAYER_W = 20, PLAYER_H = 20, PLAYER_Y = 450;
 
@@ -46,63 +47,41 @@ export default function AsteroidDodgeGame() {
       const state = stateRef.current;
       if (!canvas || !c || !state) { animId = requestAnimationFrame(draw); return; }
 
-      const W = state.canvasWidth, H = state.canvasHeight;
-      const HALF = W / 2;
+      const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#0a0a1a';
-      c.fillRect(0, 0, W, H);
+      c.fillStyle = '#0a0a1a'; c.fillRect(0, 0, W, H);
 
       // Divider
-      c.strokeStyle = '#333';
-      c.lineWidth = 2;
-      c.setLineDash([6, 6]);
-      c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke();
-      c.setLineDash([]);
+      c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
+      c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
 
       const pids = Object.keys(state.players);
-
-      // Draw both halves
       pids.forEach((pid, idx) => {
-        const offsetX = idx * HALF;
+        const ox = idx * HALF;
         const p = state.players[pid];
         const isMe = pid === myId;
 
-        // Label
-        c.fillStyle = '#ffffff66';
-        c.font = '12px monospace';
-        c.textAlign = 'center';
-        c.fillText(isMe ? 'YOU' : 'OPPONENT', offsetX + HALF / 2, 18);
+        drawLabel(c, isMe ? 'YOU' : 'OPPONENT', ox + HALF / 2, 18, { color: '#ffffff66', font: '12px monospace' });
 
-        // Asteroids (same positions for both, drawn relative to each half)
+        // Asteroids
         for (const a of state.asteroids) {
-          c.beginPath();
-          c.arc(offsetX + a.x, a.y, a.r, 0, Math.PI * 2);
-          c.fillStyle = '#888888';
-          c.fill();
-          c.strokeStyle = '#666666';
-          c.lineWidth = 1;
-          c.stroke();
+          drawSpriteCircle(c, 'asteroid', ox + a.x, a.y, a.r, { color: '#888888' });
+          c.strokeStyle = '#666666'; c.lineWidth = 1;
+          c.beginPath(); c.arc(ox + a.x, a.y, a.r, 0, Math.PI * 2); c.stroke();
         }
 
         // Player
         if (p.alive) {
-          c.fillStyle = isMe ? '#00ff88' : '#ff4488';
-          c.fillRect(offsetX + p.x, PLAYER_Y, PLAYER_W, PLAYER_H);
+          drawSprite(c, isMe ? 'ship' : 'ship', ox + p.x, PLAYER_Y, PLAYER_W, PLAYER_H, {
+            color: isMe ? '#00ff88' : '#ff4488', skin: pid,
+          });
         } else {
-          // Explosion
-          c.fillStyle = '#ff440066';
-          c.beginPath();
-          c.arc(offsetX + p.x + PLAYER_W / 2, PLAYER_Y + PLAYER_H / 2, 20, 0, Math.PI * 2);
-          c.fill();
+          drawSpriteCircle(c, 'explosion', ox + p.x + PLAYER_W / 2, PLAYER_Y + PLAYER_H / 2, 20, { color: '#ff440066' });
         }
       });
 
-      // Speed indicator
-      c.fillStyle = '#ffaa00';
-      c.font = '14px monospace';
-      c.textAlign = 'right';
-      c.fillText(`Speed: ${state.speed.toFixed(1)}`, W - 10, H - 10);
+      drawLabel(c, `Speed: ${state.speed.toFixed(1)}`, W - 10, H - 10, { color: '#ffaa00', font: '14px monospace', align: 'right' });
 
       animId = requestAnimationFrame(draw);
     }

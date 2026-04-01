@@ -1,24 +1,20 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
+import { drawSprite, drawSpriteCircle, drawLabel } from '../lib/sprites.js';
 
 const WINDOW_W = 50, WINDOW_H = 55;
 const WINDOW_Y_START = 50, WINDOW_ROW_GAP = 90;
-const WINDOW_COLS = 4;
-const WINDOW_MARGIN = 80;
-const PLAYER_W = 30, PLAYER_H = 50;
-const PLAYER_Y = 430;
-const COVER_Y = 435, COVER_H = 55, COVER_W = 50;
+const WINDOW_COLS = 4, WINDOW_MARGIN = 80;
+const PLAYER_W = 30, PLAYER_H = 50, PLAYER_Y = 430;
+const COVER_W = 50, COVER_H = 55, COVER_Y = 435;
 
-interface Bandit { id: number; col: number; row: number; visible: boolean; windingUp: boolean; targetPlayer: string | null; }
+interface Bandit { id: number; col: number; row: number; visible: boolean; windingUp: boolean; }
 interface Projectile { x: number; y: number; vx: number; vy: number; fromBandit: boolean; }
 interface PlayerState { peeking: boolean; cursorX: number; cursorY: number; kills: number; stunned: boolean; baseX: number; }
 interface CowboyState {
   players: Record<string, PlayerState>;
-  bandits: Bandit[];
-  projectiles: Projectile[];
-  timeRemaining: number;
-  canvasWidth: number; canvasHeight: number;
-  winner: string | null;
+  bandits: Bandit[]; projectiles: Projectile[];
+  timeRemaining: number; canvasWidth: number; canvasHeight: number; winner: string | null;
 }
 
 function windowCenterX(col: number): number {
@@ -39,39 +35,28 @@ export default function CowboyShootoutGame() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    let lastSend = 0;
-    function handleMove(e: MouseEvent) {
-      const now = Date.now();
-      if (now - lastSend < 33) return;
-      lastSend = now;
+    let last = 0;
+    function onMove(e: MouseEvent) {
+      const now = Date.now(); if (now - last < 33) return; last = now;
       const rect = canvas!.getBoundingClientRect();
-      const state = stateRef.current;
-      if (!state) return;
-      const x = (e.clientX - rect.left) * (state.canvasWidth / rect.width);
-      const y = (e.clientY - rect.top) * (state.canvasHeight / rect.height);
-      socket.emit('game:input', { x, y });
+      const state = stateRef.current; if (!state) return;
+      socket.emit('game:input', {
+        x: (e.clientX - rect.left) * (state.canvasWidth / rect.width),
+        y: (e.clientY - rect.top) * (state.canvasHeight / rect.height),
+      });
     }
-    function handleDown(e: MouseEvent) {
+    function onDown(e: MouseEvent) {
       e.preventDefault();
       if (e.button === 2) socket.emit('game:input', { peek: true });
       else if (e.button === 0) socket.emit('game:input', { shoot: true });
     }
-    function handleUp(e: MouseEvent) {
-      if (e.button === 2) socket.emit('game:input', { peek: false });
-    }
-    function noContext(e: Event) { e.preventDefault(); }
-
-    canvas.addEventListener('mousemove', handleMove);
-    canvas.addEventListener('mousedown', handleDown);
-    canvas.addEventListener('mouseup', handleUp);
-    canvas.addEventListener('contextmenu', noContext);
-    return () => {
-      canvas.removeEventListener('mousemove', handleMove);
-      canvas.removeEventListener('mousedown', handleDown);
-      canvas.removeEventListener('mouseup', handleUp);
-      canvas.removeEventListener('contextmenu', noContext);
-    };
+    function onUp(e: MouseEvent) { if (e.button === 2) socket.emit('game:input', { peek: false }); }
+    function noctx(e: Event) { e.preventDefault(); }
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mousedown', onDown);
+    canvas.addEventListener('mouseup', onUp);
+    canvas.addEventListener('contextmenu', noctx);
+    return () => { canvas.removeEventListener('mousemove', onMove); canvas.removeEventListener('mousedown', onDown); canvas.removeEventListener('mouseup', onUp); canvas.removeEventListener('contextmenu', noctx); };
   }, [socket]);
 
   useEffect(() => {
@@ -86,118 +71,83 @@ export default function CowboyShootoutGame() {
       canvas.width = W; canvas.height = H;
 
       // Building
-      c.fillStyle = '#3a2a1a';
-      c.fillRect(0, 0, W, H);
-
+      c.fillStyle = '#3a2a1a'; c.fillRect(0, 0, W, H);
       // Sky
-      c.fillStyle = '#1a1a3e';
-      c.fillRect(0, 0, W, 35);
+      drawSprite(c, 'cover', 0, 0, W, 35, { color: '#1a1a3e' });
 
       // Windows
       for (const bandit of state.bandits) {
         const wx = windowCenterX(bandit.col) - WINDOW_W / 2;
         const wy = WINDOW_Y_START + bandit.row * WINDOW_ROW_GAP;
 
-        // Frame
-        c.fillStyle = '#222';
-        c.fillRect(wx - 4, wy - 4, WINDOW_W + 8, WINDOW_H + 8);
-        c.fillStyle = '#0a0a1a';
-        c.fillRect(wx, wy, WINDOW_W, WINDOW_H);
+        drawSprite(c, 'cover', wx - 4, wy - 4, WINDOW_W + 8, WINDOW_H + 8, { color: '#222' });
+        drawSprite(c, 'cover', wx, wy, WINDOW_W, WINDOW_H, { color: '#0a0a1a' });
 
         if (bandit.visible) {
-          // Bandit body
-          c.fillStyle = bandit.windingUp ? '#ff4444' : '#cc8844';
-          c.fillRect(wx + 10, wy + 12, WINDOW_W - 20, WINDOW_H - 18);
-          // Hat
-          c.fillStyle = '#442200';
-          c.fillRect(wx + 6, wy + 6, WINDOW_W - 12, 10);
-
-          // Winding up indicator — flash
+          drawSprite(c, 'bandit', wx + 10, wy + 12, WINDOW_W - 20, WINDOW_H - 18, {
+            color: bandit.windingUp ? '#ff4444' : '#cc8844',
+          });
+          drawSprite(c, 'bandit', wx + 6, wy + 6, WINDOW_W - 12, 10, { color: '#442200' }); // hat
           if (bandit.windingUp) {
-            c.strokeStyle = '#ff0000';
-            c.lineWidth = 2;
+            c.strokeStyle = '#ff0000'; c.lineWidth = 2;
             c.strokeRect(wx - 2, wy - 2, WINDOW_W + 4, WINDOW_H + 4);
           }
         }
       }
 
       // Ground
-      c.fillStyle = '#5a4a2a';
-      c.fillRect(0, PLAYER_Y - 10, W, H - PLAYER_Y + 10);
+      drawSprite(c, 'platform', 0, PLAYER_Y - 10, W, H - PLAYER_Y + 10, { color: '#5a4a2a' });
 
-      // Players and their cover
+      // Players + cover
       const pids = Object.keys(state.players);
       pids.forEach((pid) => {
         const p = state.players[pid];
         const isMe = pid === myId;
         const color = isMe ? '#00ff88' : '#ff4488';
 
-        // Cover block
-        c.fillStyle = '#6a5a3a';
-        c.fillRect(p.baseX - 5, COVER_Y, COVER_W, COVER_H);
-        c.fillStyle = '#7a6a4a';
-        c.fillRect(p.baseX - 5, COVER_Y, COVER_W, 4);
+        drawSprite(c, 'cover', p.baseX - 5, COVER_Y, COVER_W, COVER_H, { color: '#6a5a3a' });
+        drawSprite(c, 'cover', p.baseX - 5, COVER_Y, COVER_W, 4, { color: '#7a6a4a' });
 
-        // Player (only visible when peeking)
         if (p.peeking) {
-          c.fillStyle = color;
-          c.fillRect(p.baseX + COVER_W - 10, PLAYER_Y - 10, 20, PLAYER_H);
-          // Gun
-          c.fillStyle = '#aaa';
-          c.fillRect(p.baseX + COVER_W + 5, PLAYER_Y, 15, 4);
+          drawSprite(c, isMe ? 'player' : 'opponent', p.baseX + COVER_W - 10, PLAYER_Y - 10, 20, PLAYER_H, { color, skin: pid });
+          drawSprite(c, 'bullet', p.baseX + COVER_W + 5, PLAYER_Y, 15, 4, { color: '#aaa' }); // gun
         }
 
-        // Stun effect
         if (p.stunned) {
           c.fillStyle = '#ff000033';
-          c.beginPath();
-          c.arc(p.baseX + PLAYER_W / 2, PLAYER_Y + PLAYER_H / 2, 30, 0, Math.PI * 2);
-          c.fill();
-          c.fillStyle = '#ff4444';
-          c.font = '12px monospace';
-          c.textAlign = 'center';
-          c.fillText('STUNNED', p.baseX + PLAYER_W / 2, PLAYER_Y - 20);
+          c.beginPath(); c.arc(p.baseX + PLAYER_W / 2, PLAYER_Y + PLAYER_H / 2, 30, 0, Math.PI * 2); c.fill();
+          drawLabel(c, 'STUNNED', p.baseX + PLAYER_W / 2, PLAYER_Y - 20, { color: '#ff4444', font: '12px monospace' });
         }
 
-        // Label + kills
-        c.fillStyle = color;
-        c.font = '14px monospace';
-        c.textAlign = 'center';
-        c.fillText(`${isMe ? 'You' : 'Opp'}: ${p.kills}`, p.baseX + PLAYER_W / 2, H - 8);
+        drawLabel(c, `${isMe ? 'You' : 'Opp'}: ${p.kills}`, p.baseX + PLAYER_W / 2, H - 8, { color, font: '14px monospace' });
       });
 
       // Projectiles
       for (const proj of state.projectiles) {
-        c.beginPath();
-        c.arc(proj.x, proj.y, 3, 0, Math.PI * 2);
-        c.fillStyle = proj.fromBandit ? '#ff6644' : '#ffff00';
-        c.fill();
-        // Trail
-        c.beginPath();
-        c.moveTo(proj.x, proj.y);
-        c.lineTo(proj.x - proj.vx * 3, proj.y - proj.vy * 3);
-        c.strokeStyle = proj.fromBandit ? '#ff664444' : '#ffff0044';
-        c.lineWidth = 2;
-        c.stroke();
+        drawSpriteCircle(c, 'bullet', proj.x, proj.y, 3, { color: proj.fromBandit ? '#ff6644' : '#ffff00' });
+        c.beginPath(); c.moveTo(proj.x, proj.y); c.lineTo(proj.x - proj.vx * 3, proj.y - proj.vy * 3);
+        c.strokeStyle = proj.fromBandit ? '#ff664444' : '#ffff0044'; c.lineWidth = 2; c.stroke();
       }
 
-      // Crosshair for local player
+      // Crosshair
       const me = state.players[myId];
       if (me && me.peeking && !me.stunned) {
-        const cx = me.cursorX, cy = me.cursorY;
-        c.strokeStyle = '#ff000088';
-        c.lineWidth = 1;
+        c.strokeStyle = '#ff000088'; c.lineWidth = 1;
         c.beginPath();
-        c.moveTo(cx - 12, cy); c.lineTo(cx + 12, cy);
-        c.moveTo(cx, cy - 12); c.lineTo(cx, cy + 12);
+        c.moveTo(me.cursorX - 12, me.cursorY); c.lineTo(me.cursorX + 12, me.cursorY);
+        c.moveTo(me.cursorX, me.cursorY - 12); c.lineTo(me.cursorX, me.cursorY + 12);
         c.stroke();
-        c.beginPath(); c.arc(cx, cy, 7, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.arc(me.cursorX, me.cursorY, 7, 0, Math.PI * 2); c.stroke();
       }
 
       // Timer
-      c.fillStyle = state.timeRemaining < 10 ? '#ff4444' : '#ffffff';
-      c.font = '24px monospace'; c.textAlign = 'center';
-      c.fillText(`${state.timeRemaining.toFixed(0)}s`, W / 2, 25);
+      drawLabel(c, `${state.timeRemaining.toFixed(0)}s`, W / 2, 25, {
+        color: state.timeRemaining < 10 ? '#ff4444' : '#ffffff', font: '24px monospace',
+      });
+
+      // Divider
+      c.strokeStyle = '#555'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(W / 2, PLAYER_Y - 10); c.lineTo(W / 2, H); c.stroke();
 
       animId = requestAnimationFrame(draw);
     }

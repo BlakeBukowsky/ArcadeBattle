@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
+import { drawSprite, drawLabel } from '../lib/sprites.js';
 
 interface PongState {
   ball: { x: number; y: number; vx: number; vy: number };
@@ -18,62 +19,37 @@ export default function PongGame() {
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<PongState | null>(null);
-  const keysRef = useRef<{ up: boolean; down: boolean }>({ up: false, down: false });
 
   useEffect(() => {
-    function handleState(state: PongState) {
-      stateRef.current = state;
-    }
-    socket.on('game:state', handleState);
-    return () => { socket.off('game:state', handleState); };
+    socket.on('game:state', (s: PongState) => { stateRef.current = s; });
+    return () => { socket.off('game:state'); };
   }, [socket]);
 
-  // Input handling
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'ArrowUp' || e.key === 'w') {
-        keysRef.current.up = true;
-        socket.emit('game:input', { up: true });
-      }
-      if (e.key === 'ArrowDown' || e.key === 's') {
-        keysRef.current.down = true;
-        socket.emit('game:input', { down: true });
-      }
+    function kd(e: KeyboardEvent) {
+      if (e.key === 'ArrowUp' || e.key === 'w') socket.emit('game:input', { up: true });
+      if (e.key === 'ArrowDown' || e.key === 's') socket.emit('game:input', { down: true });
     }
-    function handleKeyUp(e: KeyboardEvent) {
-      if (e.key === 'ArrowUp' || e.key === 'w') {
-        keysRef.current.up = false;
-        socket.emit('game:input', { up: false });
-      }
-      if (e.key === 'ArrowDown' || e.key === 's') {
-        keysRef.current.down = false;
-        socket.emit('game:input', { down: false });
-      }
+    function ku(e: KeyboardEvent) {
+      if (e.key === 'ArrowUp' || e.key === 'w') socket.emit('game:input', { up: false });
+      if (e.key === 'ArrowDown' || e.key === 's') socket.emit('game:input', { down: false });
     }
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
+    window.addEventListener('keydown', kd);
+    window.addEventListener('keyup', ku);
+    return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); };
   }, [socket]);
 
-  // Render loop
   useEffect(() => {
     let animId: number;
     function draw() {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       const state = stateRef.current;
-      if (!canvas || !ctx || !state) {
-        animId = requestAnimationFrame(draw);
-        return;
-      }
+      if (!canvas || !ctx || !state) { animId = requestAnimationFrame(draw); return; }
 
       canvas.width = state.canvasWidth;
       canvas.height = state.canvasHeight;
 
-      // Background
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -88,33 +64,30 @@ export default function PongGame() {
       ctx.setLineDash([]);
 
       // Paddles
-      const playerIds = Object.keys(state.paddles);
-      const colors = ['#00ff88', '#ff4488'];
-      playerIds.forEach((pid, i) => {
-        ctx.fillStyle = colors[i];
+      const pids = Object.keys(state.paddles);
+      pids.forEach((pid, i) => {
         const x = i === 0 ? 10 : canvas.width - PADDLE_WIDTH - 10;
-        ctx.fillRect(x, state.paddles[pid], PADDLE_WIDTH, PADDLE_HEIGHT);
+        drawSprite(ctx, 'paddle', x, state.paddles[pid], PADDLE_WIDTH, PADDLE_HEIGHT, {
+          color: pid === myId ? '#00ff88' : '#ff4488',
+          skin: pid,
+        });
       });
 
       // Ball
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(state.ball.x, state.ball.y, BALL_SIZE, BALL_SIZE);
+      drawSprite(ctx, 'ball', state.ball.x, state.ball.y, BALL_SIZE, BALL_SIZE, { color: '#ffffff' });
 
       // Scores
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '32px monospace';
-      ctx.textAlign = 'center';
-      playerIds.forEach((pid, i) => {
+      pids.forEach((pid, i) => {
         const label = pid === myId ? 'You' : 'Opp';
         const x = i === 0 ? canvas.width / 4 : (canvas.width * 3) / 4;
-        ctx.fillText(`${label}: ${state.scores[pid]}`, x, 40);
+        drawLabel(ctx, `${label}: ${state.scores[pid]}`, x, 40, { color: '#ffffff', font: '32px monospace' });
       });
 
       animId = requestAnimationFrame(draw);
     }
     animId = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animId);
-  }, [socket]);
+  }, [socket, myId]);
 
   return (
     <div className="game-container">
