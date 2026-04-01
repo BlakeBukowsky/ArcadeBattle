@@ -11,6 +11,7 @@ import { asteroidDodgeGame } from './asteroid-dodge.js';
 import { flappyRaceGame } from './flappy-race.js';
 import { spaceInvadersGame } from './space-invaders.js';
 import { cowboyShootoutGame } from './cowboy-shootout.js';
+import { arrowSequenceGame } from './arrow-sequence.js';
 
 class GameRegistry {
   private games = new Map<string, ServerGameModule>();
@@ -61,6 +62,7 @@ gameRegistry.register(asteroidDodgeGame);
 gameRegistry.register(flappyRaceGame);
 gameRegistry.register(spaceInvadersGame);
 gameRegistry.register(cowboyShootoutGame);
+gameRegistry.register(arrowSequenceGame);
 
 // Register game sets
 gameRegistry.registerSet({

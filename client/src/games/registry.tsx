@@ -10,6 +10,7 @@ import AsteroidDodgeGame from './AsteroidDodgeGame.tsx';
 import FlappyRaceGame from './FlappyRaceGame.tsx';
 import SpaceInvadersGame from './SpaceInvadersGame.tsx';
 import CowboyShootoutGame from './CowboyShootoutGame.tsx';
+import ArrowSequenceGame from './ArrowSequenceGame.tsx';
 
 export const gameComponents: Record<string, ComponentType> = {
   'pong': PongGame,
@@ -23,4 +24,5 @@ export const gameComponents: Record<string, ComponentType> = {
   'flappy-race': FlappyRaceGame,
   'space-invaders': SpaceInvadersGame,
   'cowboy-shootout': CowboyShootoutGame,
+  'arrow-sequence': ArrowSequenceGame,
 };
