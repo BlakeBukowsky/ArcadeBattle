@@ -12,6 +12,7 @@ import { flappyRaceGame } from './flappy-race.js';
 import { spaceInvadersGame } from './space-invaders.js';
 import { cowboyShootoutGame } from './cowboy-shootout.js';
 import { arrowSequenceGame } from './arrow-sequence.js';
+import { rhythmGame } from './rhythm.js';
 
 class GameRegistry {
   private games = new Map<string, ServerGameModule>();
@@ -63,6 +64,7 @@ gameRegistry.register(flappyRaceGame);
 gameRegistry.register(spaceInvadersGame);
 gameRegistry.register(cowboyShootoutGame);
 gameRegistry.register(arrowSequenceGame);
+gameRegistry.register(rhythmGame);
 
 // Register game sets
 gameRegistry.registerSet({
