@@ -5,15 +5,19 @@ const HALF_W = W / 2;
 const BIRD_X = 80, BIRD_R = 12;
 const GRAVITY = 0.5;
 const FLAP_POWER = -7;
-const PIPE_W = 40, GAP_H = 120;
+const PIPE_W = 40;
+const GAP_H_START = 180;
+const GAP_H_MIN = 100;
+const GAP_SHRINK = 0.015; // per pipe spawned
 const BASE_SPEED = 3;
 const SPEED_INCREASE = 0.001;
-const PIPE_SPACING = 200;
+const PIPE_SPACING = 220;
 const TICK_RATE = 1000 / 60;
 
 interface Pipe {
   x: number;
   gapY: number; // center of gap
+  gapH: number; // gap height (shrinks over time)
   passed: boolean;
 }
 
@@ -65,20 +69,32 @@ export const flappyRaceGame: ServerGameModule = {
       winner: null,
     };
 
+    let pipeCount = 0;
+
+    function makeGapH(): number {
+      return Math.max(GAP_H_MIN, GAP_H_START - pipeCount * GAP_SHRINK * 60);
+    }
+
     // Pre-generate initial pipes
     for (let i = 0; i < 6; i++) {
+      const gapH = makeGapH();
+      pipeCount++;
       state.pipes.push({
         x: HALF_W + 100 + i * PIPE_SPACING,
-        gapY: 80 + Math.random() * (H - 160),
+        gapY: gapH / 2 + 20 + Math.random() * (H - gapH - 40),
+        gapH,
         passed: false,
       });
     }
 
     function spawnPipe(): void {
       const lastPipe = state.pipes[state.pipes.length - 1];
+      const gapH = makeGapH();
+      pipeCount++;
       state.pipes.push({
         x: lastPipe.x + PIPE_SPACING,
-        gapY: 80 + Math.random() * (H - 160),
+        gapY: gapH / 2 + 20 + Math.random() * (H - gapH - 40),
+        gapH,
         passed: false,
       });
     }
@@ -119,7 +135,7 @@ export const flappyRaceGame: ServerGameModule = {
           const pipeScreenX = pipe.x - state.scrollOffset;
           if (pipeScreenX > BIRD_X + BIRD_R || pipeScreenX + PIPE_W < BIRD_X - BIRD_R) continue;
 
-          const inGap = p.y > pipe.gapY - GAP_H / 2 && p.y < pipe.gapY + GAP_H / 2;
+          const inGap = p.y > pipe.gapY - pipe.gapH / 2 && p.y < pipe.gapY + pipe.gapH / 2;
           if (!inGap) {
             p.alive = false;
             p.deathTick = tickCount;

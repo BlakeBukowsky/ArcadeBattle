@@ -51,7 +51,7 @@ export const volleyballGame: ServerGameModule = {
         [p1]: { x: W / 4 - PLAYER_W / 2, y: FLOOR_Y - PLAYER_H, vy: 0, onGround: true },
         [p2]: { x: (3 * W) / 4 - PLAYER_W / 2, y: FLOOR_Y - PLAYER_H, vy: 0, onGround: true },
       },
-      ball: { x: W / 4, y: 100, vx: 1, vy: 0 },
+      ball: { x: W / 4, y: 100, vx: 0.4, vy: 0 },
       scores: { [p1]: 0, [p2]: 0 },
       canvasWidth: W,
       canvasHeight: H,
@@ -64,7 +64,7 @@ export const volleyballGame: ServerGameModule = {
       const serveLeft = state.serveCount % 2 === 0;
       state.ball.x = serveLeft ? W / 4 : (3 * W) / 4;
       state.ball.y = 100;
-      state.ball.vx = serveLeft ? 0.8 : -0.8;
+      state.ball.vx = serveLeft ? 0.4 : -0.4;
       state.ball.vy = 0;
       state.serveCount++;
       rallyTicks = 0;

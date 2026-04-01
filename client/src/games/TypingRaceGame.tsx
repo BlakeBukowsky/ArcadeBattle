@@ -74,6 +74,12 @@ export default function TypingRaceGame() {
         c.save();
         c.beginPath(); c.rect(ox, 0, HALF, H); c.clip();
 
+        // Opponent side tint
+        if (!isMe) {
+          c.fillStyle = '#ff448808';
+          c.fillRect(ox, 0, HALF, H);
+        }
+
         // Flash background
         if (isMe && showFlash) {
           c.fillStyle = flashRef.current.correct ? '#00ff8810' : '#ff448825';
@@ -111,11 +117,12 @@ export default function TypingRaceGame() {
             const cx = ox + 24 + col * CHAR_W;
             const cy = y + 14 + row * 18;
 
+            const doneColor = isMe ? '#00ff88' : '#ff4488';
             let color: string;
             if (isDone || p.completed) {
-              color = '#00ff88';
+              color = doneColor;
             } else if (isCurrent) {
-              if (ci < p.inputIndex) color = '#00ff88';
+              if (ci < p.inputIndex) color = doneColor;
               else if (ci === p.inputIndex) color = '#ffffff';
               else color = '#555555';
             } else {

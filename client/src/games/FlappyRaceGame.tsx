@@ -3,9 +3,9 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
-const BIRD_X = 80, BIRD_R = 12, PIPE_W = 40, GAP_H = 120;
+const BIRD_X = 80, BIRD_R = 12, PIPE_W = 40;
 
-interface Pipe { x: number; gapY: number; }
+interface Pipe { x: number; gapY: number; gapH: number; }
 interface PlayerState { y: number; alive: boolean; score: number; }
 interface FlappyState {
   players: Record<string, PlayerState>;
@@ -64,11 +64,12 @@ export default function FlappyRaceGame() {
         for (const pipe of state.pipes) {
           const px = ox + pipe.x - state.scrollOffset;
           if (px + PIPE_W < ox || px > ox + HALF) continue;
-          drawSprite(c, 'pipe', px, 0, PIPE_W, pipe.gapY - GAP_H / 2, { color: '#2d8b4e' });
-          drawSprite(c, 'pipe', px, pipe.gapY + GAP_H / 2, PIPE_W, H - (pipe.gapY + GAP_H / 2), { color: '#2d8b4e' });
+          const gh = pipe.gapH;
+          drawSprite(c, 'pipe', px, 0, PIPE_W, pipe.gapY - gh / 2, { color: '#2d8b4e' });
+          drawSprite(c, 'pipe', px, pipe.gapY + gh / 2, PIPE_W, H - (pipe.gapY + gh / 2), { color: '#2d8b4e' });
           // Caps
-          drawSprite(c, 'pipe', px - 3, pipe.gapY - GAP_H / 2 - 8, PIPE_W + 6, 8, { color: '#3aa55d' });
-          drawSprite(c, 'pipe', px - 3, pipe.gapY + GAP_H / 2, PIPE_W + 6, 8, { color: '#3aa55d' });
+          drawSprite(c, 'pipe', px - 3, pipe.gapY - gh / 2 - 8, PIPE_W + 6, 8, { color: '#3aa55d' });
+          drawSprite(c, 'pipe', px - 3, pipe.gapY + gh / 2, PIPE_W + 6, 8, { color: '#3aa55d' });
         }
 
         // Bird
