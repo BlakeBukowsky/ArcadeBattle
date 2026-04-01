@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const BIRD_X = 80, BIRD_R = 12, PIPE_W = 40, GAP_H = 120;
 
@@ -44,7 +44,7 @@ export default function FlappyRaceGame() {
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#0a1628'; c.fillRect(0, 0, W, H);
+      drawBackground(c, 'flappy-race', W, H, { color: '#0a1628' });
 
       // Divider
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);

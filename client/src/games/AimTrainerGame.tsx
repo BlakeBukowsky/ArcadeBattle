@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSpriteCircle, drawLabel } from '../lib/sprites.js';
+import { drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 
 interface Target { id: number; x: number; y: number; radius: number; }
 interface AimState {
@@ -50,8 +50,7 @@ export default function AimTrainerGame() {
       canvas.width = state.canvasWidth;
       canvas.height = state.canvasHeight;
 
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawBackground(ctx, 'aim-trainer', canvas.width, canvas.height, { color: '#1a1a2e' });
 
       // Targets — concentric rings via sprite API
       state.targets.forEach((t) => {

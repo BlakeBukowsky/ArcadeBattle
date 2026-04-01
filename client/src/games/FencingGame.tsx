@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const PLAYER_W = 20, PLAYER_H = 44, SWORD_LEN = 35, SWORD_W = 3;
 
@@ -59,7 +59,7 @@ export default function FencingGame() {
       canvas.height = state.viewHeight;
       const cam = state.cameraX;
 
-      c.fillStyle = '#1a1a2e'; c.fillRect(0, 0, state.viewWidth, state.viewHeight);
+      drawBackground(c, 'fencing', state.viewWidth, state.viewHeight, { color: '#1a1a2e', scrollX: cam });
 
       // Floor
       drawSprite(c, 'platform', 0, state.floorY, state.viewWidth, state.viewHeight - state.floorY, { color: '#333' });

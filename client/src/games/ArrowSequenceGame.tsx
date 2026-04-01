@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawLabel } from '../lib/sprites.js';
+import { drawLabel, drawBackground } from '../lib/sprites.js';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -73,7 +73,7 @@ export default function ArrowSequenceGame() {
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#0a0a1a'; c.fillRect(0, 0, W, H);
+      drawBackground(c, 'arrow-sequence', W, H, { color: '#0a0a1a' });
 
       const flashAge = Date.now() - flashRef.current.time;
       const showFlash = flashAge < 200;

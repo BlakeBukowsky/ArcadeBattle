@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSpriteCircle, drawSprite, drawLabel } from '../lib/sprites.js';
+import { drawSpriteCircle, drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const PUCK_R = 12, MALLET_R = 20;
 
@@ -52,9 +52,7 @@ export default function AirHockeyGame() {
       canvas.width = W; canvas.height = H;
       const goalTop = (H - state.goalWidth) / 2;
 
-      // Table
-      c.fillStyle = '#1a3a2e';
-      c.fillRect(0, 0, W, H);
+      drawBackground(c, 'air-hockey', W, H, { color: '#1a3a2e' });
 
       // Center line + circle (procedural)
       c.setLineDash([6, 6]); c.strokeStyle = '#ffffff22'; c.lineWidth = 2;

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const PLAYER_W = 24, PLAYER_H = 16;
 const INVADER_W = 22, INVADER_H = 16, INVADER_SPACING_X = 36, INVADER_SPACING_Y = 28;
@@ -57,7 +57,7 @@ export default function SpaceInvadersGame() {
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#0a0a1a'; c.fillRect(0, 0, W, H);
+      drawBackground(c, 'space-invaders', W, H, { color: '#0a0a1a' });
 
       // Divider
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);

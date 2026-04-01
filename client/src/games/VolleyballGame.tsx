@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const PLAYER_W = 30, PLAYER_H = 40, BALL_R = 12, NET_W = 6;
 
@@ -52,7 +52,7 @@ export default function VolleyballGame() {
       const FLOOR_Y = H - 30, NET_X = W / 2, NET_H = 140;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#1a1a2e'; c.fillRect(0, 0, W, H);
+      drawBackground(c, 'volleyball', W, H, { color: '#1a1a2e' });
 
       // Floor
       drawSprite(c, 'platform', 0, FLOOR_Y, W, H - FLOOR_Y, { color: '#2a4a3e' });

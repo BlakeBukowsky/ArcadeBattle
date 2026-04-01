@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const PLAYER_W = 24, PLAYER_H = 28;
 
@@ -53,8 +53,7 @@ export default function JoustGame() {
       canvas.width = state.canvasWidth;
       canvas.height = state.canvasHeight;
 
-      c.fillStyle = '#1a1a2e';
-      c.fillRect(0, 0, canvas.width, canvas.height);
+      drawBackground(c, 'joust', canvas.width, canvas.height, { color: '#1a1a2e' });
 
       // Platforms
       for (const plat of state.platforms) {

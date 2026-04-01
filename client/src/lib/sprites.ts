@@ -263,3 +263,112 @@ export function drawSpriteCircle(
 
   drawPlaceholderCircle(ctx, cx, cy, r, opts);
 }
+
+// ── Background Rendering ──
+
+export interface BackgroundOptions {
+  color?: string;        // fallback fill color
+  scrollX?: number;      // horizontal scroll offset
+  scrollY?: number;      // vertical scroll offset
+  parallax?: number;     // depth multiplier (0 = fixed, 1 = full scroll, 0.5 = half speed)
+  mode?: 'fill' | 'tile'; // fill = stretch to fit, tile = repeat pattern
+  alpha?: number;
+}
+
+/**
+ * Draw a game background.
+ *
+ * Lookup order:
+ *   1. "{gameId}.bg" sprite sheet — game-specific background image
+ *   2. "bg" sprite sheet          — global default background
+ *   3. solid color fill           — opts.color fallback
+ *
+ * Usage:
+ *   drawBackground(ctx, 'pong', 800, 500, { color: '#1a1a2e' });
+ *   drawBackground(ctx, 'fencing', 800, 400, { color: '#1a1a2e', scrollX: cameraX });
+ *
+ * Loading:
+ *   loadSpriteSheet('pong.bg', '/backgrounds/pong.png', 800, 500);
+ */
+export function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  gameId: string,
+  w: number, h: number,
+  opts?: BackgroundOptions,
+): void {
+  const key = resolveSheetKey(`${gameId}.bg`) ?? resolveSheetKey('bg');
+
+  if (key) {
+    drawBgImage(ctx, key, w, h, opts);
+    return;
+  }
+
+  // Fallback: solid color fill
+  ctx.save();
+  if (opts?.alpha !== undefined) ctx.globalAlpha = opts.alpha;
+  ctx.fillStyle = opts?.color ?? '#0a0a1a';
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+/**
+ * Draw an additional parallax layer on top of the background.
+ *
+ * Lookup order:
+ *   1. "{gameId}.bg-{layer}" — game-specific layer
+ *   2. "bg-{layer}"          — global default layer
+ *   3. no-op                 — layers are optional, no fallback
+ *
+ * Usage:
+ *   drawBackgroundLayer(ctx, 'flappy-race', 'clouds', 800, 500, { scrollX: offset, parallax: 0.3 });
+ */
+export function drawBackgroundLayer(
+  ctx: CanvasRenderingContext2D,
+  gameId: string,
+  layer: string,
+  w: number, h: number,
+  opts?: BackgroundOptions,
+): void {
+  const key = resolveSheetKey(`${gameId}.bg-${layer}`) ?? resolveSheetKey(`bg-${layer}`);
+  if (!key) return; // layers are optional — no fallback
+
+  drawBgImage(ctx, key, w, h, opts);
+}
+
+/** Internal: draw a background image with scroll/parallax/tile support. */
+function drawBgImage(
+  ctx: CanvasRenderingContext2D,
+  sheetKey: string,
+  w: number, h: number,
+  opts?: BackgroundOptions,
+): void {
+  const sheet = spriteCache.get(sheetKey);
+  if (!sheet?.loaded) return;
+
+  const parallax = opts?.parallax ?? 1;
+  const sx = (opts?.scrollX ?? 0) * parallax;
+  const sy = (opts?.scrollY ?? 0) * parallax;
+  const mode = opts?.mode ?? 'fill';
+
+  ctx.save();
+  if (opts?.alpha !== undefined) ctx.globalAlpha = opts.alpha;
+
+  if (mode === 'tile') {
+    // Tile the image across the viewport
+    const imgW = sheet.image.width;
+    const imgH = sheet.image.height;
+    const offsetX = ((sx % imgW) + imgW) % imgW;
+    const offsetY = ((sy % imgH) + imgH) % imgH;
+
+    for (let x = -offsetX; x < w; x += imgW) {
+      for (let y = -offsetY; y < h; y += imgH) {
+        ctx.drawImage(sheet.image, x, y);
+      }
+    }
+  } else {
+    // Fill: stretch the image to cover the viewport, offset by scroll
+    ctx.drawImage(sheet.image, -sx, -sy, Math.max(w, sheet.image.width), Math.max(h, sheet.image.height));
+  }
+
+  ctx.restore();
+}

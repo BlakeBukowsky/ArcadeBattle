@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 
 interface PongState {
   ball: { x: number; y: number; vx: number; vy: number };
@@ -50,8 +50,7 @@ export default function PongGame() {
       canvas.width = state.canvasWidth;
       canvas.height = state.canvasHeight;
 
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawBackground(ctx, 'pong', canvas.width, canvas.height, { color: '#1a1a2e' });
 
       // Center line
       ctx.setLineDash([8, 8]);

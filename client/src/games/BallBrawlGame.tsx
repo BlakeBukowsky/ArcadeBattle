@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const PLAYER_W = 40, PLAYER_H = 50, BALL_R = 12, SWING_RANGE = 65;
 
@@ -54,7 +54,7 @@ export default function BallBrawlGame() {
       const FLOOR_Y = H - 30;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#1a1a2e'; c.fillRect(0, 0, W, H);
+      drawBackground(c, 'ball-brawl', W, H, { color: '#1a1a2e' });
       drawSprite(c, 'platform', 0, FLOOR_Y, W, H - FLOOR_Y, { color: '#2a2a3e' });
 
       // Ball

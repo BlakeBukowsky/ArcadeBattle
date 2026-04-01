@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawLabel } from '../lib/sprites.js';
+import { drawLabel, drawBackground } from '../lib/sprites.js';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -69,7 +69,7 @@ export default function RhythmGame() {
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       canvas.width = W; canvas.height = H;
 
-      c.fillStyle = '#0a0a1a'; c.fillRect(0, 0, W, H);
+      drawBackground(c, 'rhythm', W, H, { color: '#0a0a1a' });
 
       // Divider
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel } from '../lib/sprites.js';
+import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 
 const WINDOW_W = 50, WINDOW_H = 55;
 const WINDOW_Y_START = 50, WINDOW_ROW_GAP = 90;
@@ -70,8 +70,7 @@ export default function CowboyShootoutGame() {
       const W = state.canvasWidth, H = state.canvasHeight;
       canvas.width = W; canvas.height = H;
 
-      // Building
-      c.fillStyle = '#3a2a1a'; c.fillRect(0, 0, W, H);
+      drawBackground(c, 'cowboy-shootout', W, H, { color: '#3a2a1a' });
       // Sky
       drawSprite(c, 'cover', 0, 0, W, 35, { color: '#1a1a3e' });
 
