@@ -103,10 +103,15 @@ export const flappyRaceGame: ServerGameModule = {
         p.vy += GRAVITY;
         p.y += p.vy;
 
-        // Floor/ceiling death
-        if (p.y - BIRD_R < 0 || p.y + BIRD_R > H) {
+        // Ceiling death
+        if (p.y - BIRD_R < 0) {
           p.alive = false;
           p.deathTick = tickCount;
+        }
+        // Floor — bounce off instead of dying
+        if (p.y + BIRD_R > H) {
+          p.y = H - BIRD_R;
+          p.vy = -Math.abs(p.vy) * 0.5;
         }
 
         // Pipe collision

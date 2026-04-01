@@ -1,21 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
-import { PositionPredictor } from '../lib/prediction.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
+import { PositionPredictor } from '../lib/prediction.js';
+
+const PADDLE_W = 12, PADDLE_H = 80, BALL_SIZE = 10, PADDLE_SPEED = 8;
 
 interface PongState {
   ball: { x: number; y: number; vx: number; vy: number };
   paddles: Record<string, number>;
   scores: Record<string, number>;
+  serving: boolean;
   canvasWidth: number;
   canvasHeight: number;
 }
-
-const PADDLE_WIDTH = 12;
-const PADDLE_HEIGHT = 80;
-const PADDLE_SPEED = 9;
-const BALL_SIZE = 10;
 
 export default function PongGame() {
   const socket = useSocket();
@@ -29,13 +27,12 @@ export default function PongGame() {
     socket.on('game:state', (data: unknown) => {
       const updated = applyStateUpdate(interpRef.latest(), data);
       interpRef.push(updated);
-      // Feed server position to predictor
       if (updated.paddles[myId] !== undefined) {
         paddlePredictor.setServerPosition(0, updated.paddles[myId]);
       }
     });
     return () => { socket.off('game:state'); };
-  }, [socket, myId, paddlePredictor]);
+  }, [socket, myId, interpRef, paddlePredictor]);
 
   useEffect(() => {
     function kd(e: KeyboardEvent) {
@@ -60,16 +57,14 @@ export default function PongGame() {
       if (!canvas || !ctx || !state) { animId = requestAnimationFrame(draw); return; }
 
       const W = state.canvasWidth, H = state.canvasHeight;
-      canvas.width = W;
-      canvas.height = H;
+      canvas.width = W; canvas.height = H;
 
-      // Apply local prediction for own paddle
+      // Local prediction for own paddle
       const keys = keysRef.current;
       if (keys.up) paddlePredictor.applyInput(0, -PADDLE_SPEED);
       if (keys.down) paddlePredictor.applyInput(0, PADDLE_SPEED);
       const predicted = paddlePredictor.getPosition();
-      // Clamp
-      predicted.y = Math.max(0, Math.min(H - PADDLE_HEIGHT, predicted.y));
+      predicted.y = Math.max(0, Math.min(H - PADDLE_H, predicted.y));
 
       drawBackground(ctx, 'pong', W, H, { color: '#1a1a2e' });
 
@@ -86,16 +81,18 @@ export default function PongGame() {
       // Paddles
       const pids = Object.keys(state.paddles);
       pids.forEach((pid, i) => {
-        const x = i === 0 ? 10 : W - PADDLE_WIDTH - 10;
+        const x = i === 0 ? 10 : W - PADDLE_W - 10;
         const y = pid === myId ? predicted.y : state.paddles[pid];
-        drawSprite(ctx, 'paddle', x, y, PADDLE_WIDTH, PADDLE_HEIGHT, {
+        drawSprite(ctx, 'paddle', x, y, PADDLE_W, PADDLE_H, {
           color: pid === myId ? '#00ff88' : '#ff4488',
           skin: pid,
         });
       });
 
       // Ball
-      drawSprite(ctx, 'ball', state.ball.x, state.ball.y, BALL_SIZE, BALL_SIZE, { color: '#ffffff' });
+      if (!state.serving) {
+        drawSprite(ctx, 'ball', state.ball.x, state.ball.y, BALL_SIZE, BALL_SIZE, { color: '#ffffff' });
+      }
 
       // Scores
       pids.forEach((pid, i) => {
@@ -104,16 +101,21 @@ export default function PongGame() {
         drawLabel(ctx, `${label}: ${state.scores[pid]}`, x, 40, { color: '#ffffff', font: '32px monospace' });
       });
 
+      // Serving indicator
+      if (state.serving) {
+        drawLabel(ctx, 'READY...', W / 2, H / 2, { color: '#ffaa00', font: '20px monospace' });
+      }
+
       animId = requestAnimationFrame(draw);
     }
     animId = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animId);
-  }, [socket, myId, paddlePredictor]);
+  }, [socket, myId, interpRef, paddlePredictor]);
 
   return (
     <div className="game-container">
       <canvas ref={canvasRef} className="game-canvas" />
-      <p className="controls-hint">Use W/S or Arrow Keys to move</p>
+      <p className="controls-hint">W/S or Arrow Keys to move</p>
     </div>
   );
 }

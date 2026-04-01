@@ -135,7 +135,13 @@ function lerpState<T>(a: T, b: T, t: number): T {
     const bv = result[key];
 
     if (typeof av === 'number' && typeof bv === 'number') {
-      result[key] = av + (bv - av) * t;
+      // Don't interpolate integers (scores, counts, IDs) — they snap
+      // Only lerp values that have fractional parts (positions, velocities)
+      if (Number.isInteger(av) && Number.isInteger(bv)) {
+        result[key] = bv; // snap
+      } else {
+        result[key] = av + (bv - av) * t; // lerp
+      }
     } else if (
       av && bv &&
       typeof av === 'object' && typeof bv === 'object' &&
