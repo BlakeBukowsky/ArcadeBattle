@@ -8,7 +8,8 @@ Arcade Battle uses a **server-authoritative** architecture. All game logic runs 
 ┌─────────────┐     WebSocket      ┌─────────────────┐     WebSocket      ┌─────────────┐
 │   Player 1  │ ◄────────────────► │     Server      │ ◄────────────────► │   Player 2  │
 │  (React UI) │   inputs / state   │ (Node+Socket.IO)│   inputs / state   │  (React UI) │
-└─────────────┘                    └─────────────────┘                    └─────────────┘
+└─────────────┘                    │     SQLite DB   │                    └─────────────┘
+                                   └─────────────────┘
 ```
 
 ## Packages
@@ -20,34 +21,77 @@ The project is a monorepo with three npm workspace packages:
 Shared TypeScript types and constants used by both client and server. This is the contract between the two — any interface change starts here.
 
 Key exports:
-- **`LobbyState`** — Current lobby info (players, ready state, config)
-- **`LobbyConfig`** — Match settings (pointsToWin, gameSetId)
-- **`TransitionData`** — Data for between-round screen (game name, scores, prev result)
+- **`AuthUser`** — Authenticated or guest user identity (id, displayName, avatarUrl, isGuest)
+- **`Player`** — Player in a lobby (id, displayName, avatarUrl, status)
+- **`LobbyState`** / **`LobbyConfig`** — Lobby info and configurable settings
+- **`TransitionData`** — Between-round screen data (game name, scores, prev result)
 - **`MatchEndData`** — Final match result (winner, scores, round history)
-- **`ServerGameModule`** / **`GameInstance`** — Server-side game plugin interface
+- **`ServerGameModule`** / **`GameInstance`** / **`MatchContext`** — Game plugin interfaces
 - **`GameInfo`** — Game metadata (id, name, description, maxDuration)
-- **`MatchContext`** — API given to game instances for communication
-- **`GameSet`** — Named collection of games
+- **`GameSet`** — Named collection of games for lobby configuration
 
 ### `server/`
 
-The game server. Handles lobbies, match orchestration, and all game logic.
+The game server. Handles auth, lobbies, match orchestration, and all game logic.
 
 Key modules:
-- **`index.ts`** — Express + Socket.IO setup, socket event routing
-- **`lobby.ts`** — `LobbyManager` class: create/join/ready/config/disconnect
+- **`index.ts`** — Express + Socket.IO setup, socket event routing, static file serving in production
+- **`db.ts`** — SQLite database init, user CRUD (find, create, update), OAuth account linking
+- **`auth.ts`** — Express router: OAuth flows (Google, Discord), JWT sign/verify, `/auth/me`, `/auth/profile`
+- **`middleware.ts`** — Socket.IO auth middleware (JWT → user, or guest fallback), `UserSocketMap` class
+- **`lobby.ts`** — `LobbyManager` class: create/join/ready/config/disconnect, reconnection support
 - **`match.ts`** — `MatchManager` class: game selection, round lifecycle, scoring
-- **`games/`** — Individual game modules + registry
+- **`games/`** — 11 game modules + registry + game sets
 
 ### `client/`
 
 The React frontend. Renders UI and game visuals, sends player inputs to server.
 
 Key modules:
-- **`context/SocketContext.tsx`** — Provides the Socket.IO connection to all components
-- **`context/GameContext.tsx`** — Global UI state: current screen, lobby state, match data
-- **`screens/`** — One component per screen in the app flow
-- **`games/`** — Client-side game renderers + registry
+- **`context/AuthContext.tsx`** — OAuth login (popup flow), JWT storage, profile updates
+- **`context/SocketContext.tsx`** — Socket.IO connection with auth token, guest ID persistence
+- **`context/GameContext.tsx`** — UI state: current screen, lobby state, match data
+- **`screens/`** — Home, Profile, Lobby, LobbyNotFound, Transition, Playing, GameOver
+- **`games/`** — 11 client-side game renderers + registry
+- **`lib/sprites.ts`** — Sprite rendering system with skin support
+
+## Authentication
+
+### Identity Model
+
+Players have two identity types:
+
+- **Authenticated users** — Signed in via Google or Discord OAuth. Have a persistent `userId` stored in SQLite, customizable display name and avatar. Only one OAuth provider required; the other can be linked later.
+- **Guests** — No sign-in required. Get a temporary `guest_xxxx` ID and auto-generated name ("Guest 1234"). Guest IDs persist within a browser session via `sessionStorage` to survive Socket.IO reconnects.
+
+### OAuth Flow
+
+```
+1. User clicks "Sign in with Google/Discord" on HomeScreen
+2. AuthContext opens a popup to /auth/google (or /auth/discord)
+3. Server redirects popup to OAuth provider consent screen
+4. Provider redirects back to /auth/google/callback with auth code
+5. Server exchanges code for tokens, fetches profile
+6. Server finds or creates user in SQLite, signs a JWT
+7. Callback HTML sends JWT to opener via window.postMessage()
+8. AuthContext receives token, stores in localStorage, fetches /auth/me
+9. SocketContext reconnects with the JWT in auth handshake
+10. Socket.IO middleware validates JWT, attaches userId to socket.data
+```
+
+### Profile
+
+Authenticated users can update their display name and avatar URL via the Profile screen. The `PUT /auth/profile` endpoint validates and persists changes to SQLite.
+
+### Socket.IO Auth Middleware
+
+Every socket connection goes through `authMiddleware`:
+- **With JWT**: Validates token, looks up user in DB, attaches `userId`/`displayName` to `socket.data`
+- **Without JWT**: Assigns a guest identity. If the client sends a `guestId` (from sessionStorage), it's reused for reconnection stability.
+
+### UserSocketMap
+
+Bridges persistent `userId` with ephemeral `socket.id`. All game logic uses `userId` as the player identifier. The map handles reconnections — when a user reconnects with a new socket, the old mapping is replaced.
 
 ## Data Flow
 
@@ -89,49 +133,50 @@ Player 1                    Server                     Player 2
   │                       │
   │ (game calls endRound) │
   └───────────────────────┤
+  (if winner reached pointsToWin, stop)
                           │
     match:end ────────────┤──────────► (winner, final scores, history)
 ```
 
-### Game Tick Cycle (During a Round)
+### Play Again Flow
 
-```
-1. Client captures input (keydown, click, etc.)
-2. Client emits game:input with input data
-3. Server game instance processes input in onPlayerInput()
-4. Server game loop updates state (physics, collision, scoring)
-5. Server emits game:state to both players
-6. Client receives state and renders it
-7. Repeat at tick rate (60fps for Pong, 30fps for Aim Trainer)
-```
+After a match ends, each player independently clicks "Play Again" or "Home":
+- **Play Again**: Sends `match:playAgain`, player status becomes `ready` in lobby. Their opponent sees "End Screen" status until they also click.
+- **Home**: Sends `lobby:leave`, player exits lobby entirely.
+- When both players have clicked Play Again (both `ready`), countdown starts automatically.
 
 ## State Management
 
 ### Server State
 
-- **`LobbyManager`** — Map of `lobbyId → Lobby` and `playerId → lobbyId`
+- **`LobbyManager`** — Map of `lobbyId → Lobby` and `userId → lobbyId`
   - Owns lobby lifecycle, player tracking, ready state, config, countdown timers
+  - Uses `UserSocketMap` for `userId → socketId` resolution when emitting events
 
-- **`MatchManager`** — Map of `lobbyId → ActiveMatch` and `playerId → lobbyId`
+- **`MatchManager`** — Map of `lobbyId → ActiveMatch` and `userId → lobbyId`
   - Owns match state: round counter, scores, game order, active game instance
   - Cleans up its maps when match ends; lobby maps persist
+  - `onMatchEnd` callback notifies lobby to enter post-match state
 
 - **`GameRegistry`** — Map of `gameId → ServerGameModule` and `setId → GameSet`
   - Static after startup, stores all registered games and game sets
 
 ### Client State
 
-- **`SocketContext`** — Single Socket.IO connection, created once at app startup
-- **`GameContext`** — All UI state in one context:
-  - `screen` — Which screen to show (`home`, `lobby`, `lobbyNotFound`, `transition`, `playing`, `gameOver`)
-  - `lobbyState` — Latest lobby state from server
-  - `transitionData` — Current transition screen data
-  - `currentGameId` — Active game being played
-  - `matchEndData` — Match results for game-over screen
-  - `lobbyError` — Error message for lobby-not-found screen
+- **`AuthContext`** — User identity, JWT token, login/logout/updateProfile methods
+- **`SocketContext`** — Socket.IO connection (gated on auth loading), `myId` (userId assigned by server)
+- **`GameContext`** — All UI state:
+  - `screen` — Which screen to show (`home`, `profile`, `lobby`, `lobbyNotFound`, `transition`, `playing`, `gameOver`)
+  - `lobbyState`, `transitionData`, `currentGameId`, `matchEndData`, `lobbyError`
   - `resetMatchState()` — Clears all match data when returning to lobby
 
 ## Socket.IO Events Reference
+
+### Auth Events
+
+| Event | Direction | Payload | Description |
+|-------|-----------|---------|-------------|
+| `auth:identity` | S→C | `AuthUser` | Server sends assigned identity on connect |
 
 ### Lobby Events
 
@@ -139,9 +184,10 @@ Player 1                    Server                     Player 2
 |-------|-----------|---------|-------------|
 | `lobby:create` | C→S | callback(lobbyId) | Create new lobby, returns ID |
 | `lobby:join` | C→S | `{ lobbyId }` | Join existing lobby |
+| `lobby:leave` | C→S | — | Leave current lobby |
 | `lobby:config` | C→S | `Partial<LobbyConfig>` | Host updates settings |
-| `lobby:ready` | C→S | — | Toggle ready state on |
-| `lobby:unready` | C→S | — | Toggle ready state off |
+| `lobby:ready` | C→S | — | Set ready status |
+| `lobby:unready` | C→S | — | Unset ready status |
 | `lobby:state` | S→C | `LobbyState` | Full lobby state update |
 | `lobby:error` | S→C | `{ message }` | Lobby join error |
 
@@ -153,7 +199,7 @@ Player 1                    Server                     Player 2
 | `match:transition` | S→C | `TransitionData` | Show next game + scores |
 | `match:roundStart` | S→C | `{ gameId }` | Begin playing the game |
 | `match:end` | S→C | `MatchEndData` | Match is over |
-| `match:playAgain` | C→S | — | Return to lobby |
+| `match:playAgain` | C→S | — | Player ready for another match |
 
 ### Game Events
 
@@ -166,14 +212,14 @@ Player 1                    Server                     Player 2
 
 The lobby host can configure:
 
-- **Points to Win** (1-5): How many round wins needed to win the match
+- **Points to Win** (1-10): How many round wins needed to win the match. Configurable via slider.
 - **Game Set**: Which pool of games to draw from (currently only "All Games")
 
-Config changes are sent via `lobby:config` and only accepted from the host (verified server-side). The config is stored in the lobby and passed to `MatchManager` when the match starts.
+Config changes are sent via `lobby:config` and only accepted from the host (verified server-side). Non-host players see the settings as read-only.
 
 ## Game Sets
 
-Game sets define pools of games that can be selected for a match. Each set has:
+Game sets define pools of games that can be selected for a match:
 
 ```typescript
 interface GameSet {
@@ -186,23 +232,68 @@ interface GameSet {
 
 Sets are registered in `server/src/games/registry.ts`. When a match starts, the server picks games from the selected set, shuffles them, and assigns enough for the maximum possible rounds.
 
+## Sprite System
+
+Games render via `client/src/lib/sprites.ts`, which provides a sprite API with **player skin support**.
+
+### Lookup Cascade
+
+```
+drawSprite(ctx, 'ball', x, y, w, h, { skin: playerId })
+
+1. Try: "{playerId}.ball" sprite sheet  →  player's custom skin
+2. Try: "ball" sprite sheet             →  default sprite
+3. Fall back: colored rectangle         →  placeholder
+```
+
+### Loading Sprites
+
+```typescript
+loadSpriteSheet('ball', '/sprites/ball.png', 32, 32);           // default
+loadSpriteSheet('usr_abc.ball', '/skins/usr_abc/ball.png', 32, 32); // skin
+```
+
+See [sprite-requirements.md](sprite-requirements.md) for the full catalog of entities needing sprites.
+
+## Database Schema
+
+```sql
+users (id TEXT PK, display_name TEXT, avatar_url TEXT, created_at TEXT)
+oauth_accounts (provider TEXT, provider_id TEXT, user_id TEXT FK, email TEXT, PK(provider, provider_id))
+```
+
+Future tables (not yet created): skins, match_history
+
+## Reconnection Handling
+
+- **Disconnect grace period**: When a socket disconnects, the server waits 15 seconds before removing the player. If they reconnect within that window, they're re-joined to their lobby.
+- **Guest ID stability**: Guest IDs are stored in `sessionStorage` and sent back on reconnect so the same guest ID is reused.
+- **Authenticated users**: JWT persists in `localStorage`. On reconnect, the same `userId` is resolved from the JWT, and the `UserSocketMap` updates to the new socket.
+
 ## Screen Flow
 
 ```
-HomeScreen
-  └─► LobbyScreen (create or join)
-       └─► LobbyNotFoundScreen (if invalid link)
-       └─► [Countdown]
-            └─► TransitionScreen (shows prev result + next game)
-                 └─► PlayingScreen (renders active game)
-                      └─► TransitionScreen (loop until winner)
-                           └─► GameOverScreen
-                                └─► LobbyScreen (play again)
+HomeScreen ──────────────────────────────────────────────────┐
+  ├─► ProfileScreen (signed-in users)                        │
+  │     └─► HomeScreen (back)                                │
+  ├─► LobbyScreen (create or join)                           │
+  │     ├─► HomeScreen (leave lobby)                         │
+  │     ├─► LobbyNotFoundScreen (invalid link)               │
+  │     │     └─► HomeScreen                                 │
+  │     └─► [Countdown]                                      │
+  │          └─► TransitionScreen (prev result + next game)  │
+  │               └─► PlayingScreen (renders active game)    │
+  │                    └─► TransitionScreen (loop)           │
+  │                         └─► GameOverScreen               │
+  │                              ├─► LobbyScreen (play again)│
+  │                              └─► HomeScreen (home)       │
 ```
 
-## Error Handling
+## Production Deployment
 
-- **Lobby not found / full**: Server emits `lobby:error`, client shows `LobbyNotFoundScreen`
-- **Player disconnect mid-game**: Opponent wins the current round immediately; if that clinches the match, match ends. The disconnected player is removed from the lobby.
-- **Player disconnect in lobby**: Player is removed, lobby reverts to waiting state
-- **Countdown cancel**: If a player un-readies during countdown, it cancels and resets
+In production (`NODE_ENV=production`):
+- Express serves the built React client from `client/dist/` as static files
+- The catch-all route `{*path}` serves `index.html` for client-side routing
+- Socket.IO runs on the same port — no CORS needed
+- SQLite database is created at `server/data/arcade-battle.db` (directory auto-created)
+- `RAILWAY_PUBLIC_DOMAIN` is auto-detected for OAuth callback URLs

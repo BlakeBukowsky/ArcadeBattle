@@ -196,7 +196,7 @@ export default function YourGame() {
       ctx.font = '24px monospace';
       const players = Object.keys(state.scores);
       players.forEach((pid, i) => {
-        const label = pid === socket.id ? 'You' : 'Opponent';
+        const label = pid === myId ? 'You' : 'Opponent';
         ctx.fillText(`${label}: ${state.scores[pid]}`, 20, 30 + i * 30);
       });
 
@@ -258,7 +258,8 @@ export default function YourGame() {
 3. **Always clean up listeners** in the `useEffect` return function.
 4. **Send inputs immediately** — don't debounce or throttle game inputs. The server handles rate limiting if needed.
 5. **Don't compute game logic client-side** — just render what the server sends. The client is a dumb terminal.
-6. **Use `socket.id` to identify "you" vs "opponent"** when rendering scores, labels, etc.
+6. **Use `useMyId()` to identify "you" vs "opponent"** — import from `'../context/SocketContext.tsx'`. This returns the persistent userId (not socket.id).
+7. **Use the sprite system for rendering** — import `drawSprite`, `drawSpriteCircle`, `drawLabel` from `'../lib/sprites.js'`. Pass `{ skin: playerId }` in options to enable player skin lookup. Falls back to colored shapes when no sprite sheets are loaded.
 
 ## Step 4: Register the Game
 
@@ -280,10 +281,9 @@ In `client/src/games/registry.tsx`:
 ```typescript
 import YourGame from './YourGame.tsx';
 
+// Add to the gameComponents map:
 export const gameComponents: Record<string, ComponentType> = {
-  'pong': PongGame,
-  'reaction-race': ReactionRaceGame,
-  'aim-trainer': AimTrainerGame,
+  // ... existing games ...
   'your-game': YourGame,  // key must match server info.id
 };
 ```
@@ -307,14 +307,19 @@ Games in the "All" set (empty `gameIds`) are automatically included.
 
 ## Existing Games as Reference
 
-| Pattern | Example | File |
-|---------|---------|------|
-| Canvas + keyboard input | Pong | `pong.ts` / `PongGame.tsx` |
-| Canvas + mouse clicks | Aim Trainer | `aim-trainer.ts` / `AimTrainerGame.tsx` |
-| DOM + click/spacebar | Reaction Race | `reaction-race.ts` / `ReactionRaceGame.tsx` |
-| Timed game with countdown | Aim Trainer | `aim-trainer.ts` |
-| Score-based winner | Pong, Aim Trainer | first-to-N or most-in-time |
-| Instant winner (one event) | Reaction Race | single decisive moment |
+| Pattern | Example | Files |
+|---------|---------|-------|
+| Canvas + keyboard (platformer) | Joust, Volleyball, Ball Brawl | `joust.ts` / `JoustGame.tsx` |
+| Canvas + keyboard (side-scroll) | Fencing | `fencing.ts` / `FencingGame.tsx` |
+| Canvas + mouse | Air Hockey, Aim Trainer | `air-hockey.ts` / `AirHockeyGame.tsx` |
+| Canvas + mouse (shooter) | Cowboy Shootout | `cowboy-shootout.ts` / `CowboyShootoutGame.tsx` |
+| Split-screen survival | Asteroid Dodge, Flappy Race | `asteroid-dodge.ts` / `AsteroidDodgeGame.tsx` |
+| Split-screen race | Space Invaders | `space-invaders.ts` / `SpaceInvadersGame.tsx` |
+| Classic paddle | Pong | `pong.ts` / `PongGame.tsx` |
+| Timed + score-based | Aim Trainer, Cowboy Shootout | most-in-time |
+| First-to-N | Pong, Joust, Air Hockey, Volleyball | first to score limit |
+| Single-life survival | Asteroid Dodge, Flappy Race | last alive wins |
+| Reach-the-goal | Fencing | first to opponent's end zone |
 
 ## Checklist
 
@@ -327,6 +332,8 @@ Games in the "All" set (empty `gameIds`) are automatically included.
   - [ ] Listens on `game:state`, sends via `game:input`
   - [ ] Cleans up event listeners
   - [ ] Uses refs for canvas state (not React state)
+  - [ ] Uses `useMyId()` not `socket.id` for identity
+  - [ ] Uses sprite system (`drawSprite` / `drawSpriteCircle`) for rendering
 - [ ] Registered in both server and client registries
 - [ ] Game IDs match between server and client
 - [ ] Works with two browser tabs locally
