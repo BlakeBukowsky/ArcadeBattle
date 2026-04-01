@@ -1,6 +1,6 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import { findUserByOAuth, createUserWithOAuth, findUserById } from './db.js';
+import { findUserByOAuth, createUserWithOAuth, findUserById, updateUser } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const SERVER_URL = process.env.SERVER_URL
@@ -177,6 +177,41 @@ export function createAuthRouter(): Router {
 
     const user = findUserById(payload.sub);
     if (!user) { res.status(401).json({ error: 'User not found' }); return; }
+
+    res.json({
+      id: user.id,
+      displayName: user.display_name,
+      avatarUrl: user.avatar_url,
+      isGuest: false,
+    });
+  });
+
+  // ── Update Profile ──
+
+  router.put('/profile', express.json(), (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'No token' });
+      return;
+    }
+
+    const payload = verifyToken(authHeader.slice(7));
+    if (!payload) { res.status(401).json({ error: 'Invalid token' }); return; }
+
+    const { displayName, avatarUrl } = req.body as { displayName?: string; avatarUrl?: string };
+
+    if (!displayName || typeof displayName !== 'string' || displayName.trim().length === 0) {
+      res.status(400).json({ error: 'Display name is required' });
+      return;
+    }
+
+    if (displayName.trim().length > 30) {
+      res.status(400).json({ error: 'Display name must be 30 characters or less' });
+      return;
+    }
+
+    const user = updateUser(payload.sub, displayName.trim(), avatarUrl ?? null);
+    if (!user) { res.status(404).json({ error: 'User not found' }); return; }
 
     res.json({
       id: user.id,

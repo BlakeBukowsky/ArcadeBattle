@@ -571,3 +571,136 @@
 .lobby-home-btn:hover {
   opacity: 1;
 }
+
+/* ── Profile ── */
+
+.profile-screen h1 {
+  font-size: 2rem;
+  color: #00ff88;
+}
+
+.profile-card {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.profile-avatar-section {
+  display: flex;
+  justify-content: center;
+}
+
+.profile-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #00ff88;
+}
+
+.profile-avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #333;
+  border: 3px solid #00ff88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #00ff88;
+}
+
+.profile-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.profile-input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #0a0a1a;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.profile-input:focus {
+  border-color: #00ff88;
+}
+
+.profile-hint {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 400;
+}
+
+.profile-message {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  width: 100%;
+  text-align: center;
+}
+
+.profile-message.success {
+  color: #00ff88;
+  background: #00ff8815;
+}
+
+.profile-message.error {
+  color: #ff4488;
+  background: #ff448815;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.profile-account-section {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-account-id {
+  font-size: 0.75rem;
+  color: #555;
+  font-family: monospace;
+}
+
+.profile-logout {
+  opacity: 0.6;
+}
+
+.profile-logout:hover {
+  opacity: 1;
+}
+
+.profile-guest-message {
+  color: #888;
+  font-size: 1.1rem;
+}

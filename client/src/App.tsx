@@ -9,6 +9,7 @@ import LobbyNotFoundScreen from './screens/LobbyNotFoundScreen.tsx';
 import TransitionScreen from './screens/TransitionScreen.tsx';
 import PlayingScreen from './screens/PlayingScreen.tsx';
 import GameOverScreen from './screens/GameOverScreen.tsx';
+import ProfileScreen from './screens/ProfileScreen.tsx';
 import './App.css';
 
 function AppRoutes() {
@@ -57,6 +58,7 @@ function AppRoutes() {
       {game.screen === 'transition' && <TransitionScreen />}
       {game.screen === 'playing' && <PlayingScreen />}
       {game.screen === 'gameOver' && <GameOverScreen />}
+      {game.screen === 'profile' && <ProfileScreen />}
     </div>
   );
 }

@@ -29,6 +29,7 @@ export default function HomeScreen() {
           <div className="user-info">
             {user.avatarUrl && <img src={user.avatarUrl} alt="" className="user-avatar" />}
             <span className="user-name">{user.displayName}</span>
+            <button className="btn btn-small" onClick={() => game.setScreen('profile')}>Profile</button>
             <button className="btn btn-small" onClick={logout}>Sign Out</button>
           </div>
         ) : (

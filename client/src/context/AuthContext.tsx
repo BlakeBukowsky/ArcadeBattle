@@ -10,6 +10,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (provider: 'google' | 'discord') => void;
   logout: () => void;
+  updateProfile: (displayName: string, avatarUrl?: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -87,8 +88,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateProfile = useCallback(async (displayName: string, avatarUrl?: string): Promise<boolean> => {
+    if (!token) return false;
+    try {
+      const res = await fetch(`${SERVER_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ displayName, avatarUrl }),
+      });
+      if (!res.ok) return false;
+      const updated = await res.json() as AuthUser;
+      setUser(updated);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [token]);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -86,6 +86,13 @@ export function findUserById(userId: string): DbUser | undefined {
   return getDb().prepare('SELECT * FROM users WHERE id = ?').get(userId) as DbUser | undefined;
 }
 
+export function updateUser(userId: string, displayName: string, avatarUrl: string | null): DbUser | undefined {
+  getDb().prepare(`
+    UPDATE users SET display_name = ?, avatar_url = ? WHERE id = ?
+  `).run(displayName, avatarUrl, userId);
+  return findUserById(userId);
+}
+
 export function linkOAuthAccount(
   userId: string,
   provider: string,

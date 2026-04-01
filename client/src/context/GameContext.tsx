@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { LobbyState, TransitionData, MatchEndData } from '@arcade-battle/shared';
 
-type AppScreen = 'home' | 'lobby' | 'lobbyNotFound' | 'transition' | 'playing' | 'gameOver';
+type AppScreen = 'home' | 'lobby' | 'lobbyNotFound' | 'transition' | 'playing' | 'gameOver' | 'profile';
 
 interface GameContextValue {
   screen: AppScreen;
