@@ -1,14 +1,17 @@
 import Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '..', 'data', 'arcade-battle.db');
+const DB_DIR = path.join(__dirname, '..', 'data');
+const DB_PATH = path.join(DB_DIR, 'arcade-battle.db');
 
 let db: Database.Database;
 
 export function initDatabase(): Database.Database {
+  fs.mkdirSync(DB_DIR, { recursive: true });
   db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
