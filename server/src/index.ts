@@ -27,6 +27,13 @@ const io = new Server(httpServer, {
     : { origin: CLIENT_URL, methods: ['GET', 'POST'] },
 });
 
+// Serve uploaded avatars
+const AVATARS_DIR = path.join(__dirname, '..', 'data', 'avatars');
+app.use('/avatars', express.static(AVATARS_DIR, {
+  maxAge: '1h',
+  immutable: false,
+}));
+
 app.use('/auth', createAuthRouter());
 io.use(authMiddleware);
 

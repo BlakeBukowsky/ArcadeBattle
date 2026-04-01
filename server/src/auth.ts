@@ -1,6 +1,30 @@
 import express, { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { findUserByOAuth, createUserWithOAuth, findUserById, updateUser } from './db.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const AVATARS_DIR = path.join(__dirname, '..', 'data', 'avatars');
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_MIMES = ['image/png', 'image/jpeg', 'image/webp'];
+
+// Ensure avatars directory exists
+fs.mkdirSync(AVATARS_DIR, { recursive: true });
+
+const avatarUpload = multer({
+  limits: { fileSize: MAX_AVATAR_SIZE },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIMES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PNG, JPEG, and WebP images are allowed'));
+    }
+  },
+  storage: multer.memoryStorage(),
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const SERVER_URL = process.env.SERVER_URL
@@ -219,6 +243,56 @@ export function createAuthRouter(): Router {
       avatarUrl: user.avatar_url,
       isGuest: false,
     });
+  });
+
+  // ── Avatar Upload ──
+
+  router.post('/avatar', avatarUpload.single('avatar'), (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'No token' });
+      return;
+    }
+
+    const payload = verifyToken(authHeader.slice(7));
+    if (!payload) { res.status(401).json({ error: 'Invalid token' }); return; }
+
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+
+    // Validate magic bytes as an extra safety check
+    const header = req.file.buffer.slice(0, 4);
+    const isPng = header[0] === 0x89 && header[1] === 0x50;
+    const isJpeg = header[0] === 0xFF && header[1] === 0xD8;
+    const isWebp = header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46;
+
+    if (!isPng && !isJpeg && !isWebp) {
+      res.status(400).json({ error: 'Invalid image file' });
+      return;
+    }
+
+    const ext = isPng ? 'png' : isJpeg ? 'jpg' : 'webp';
+    const filename = `${payload.sub}.${ext}`;
+    const filepath = path.join(AVATARS_DIR, filename);
+
+    // Remove any existing avatar for this user (might have different extension)
+    for (const oldExt of ['png', 'jpg', 'webp']) {
+      const oldPath = path.join(AVATARS_DIR, `${payload.sub}.${oldExt}`);
+      try { fs.unlinkSync(oldPath); } catch { /* doesn't exist, fine */ }
+    }
+
+    // Write new avatar
+    fs.writeFileSync(filepath, req.file.buffer);
+
+    // Update user's avatar URL in DB
+    const avatarUrl = `/avatars/${filename}`;
+    const currentUser = findUserById(payload.sub);
+    if (!currentUser) { res.status(404).json({ error: 'User not found' }); return; }
+    updateUser(payload.sub, currentUser.display_name, avatarUrl);
+
+    res.json({ avatarUrl });
   });
 
   return router;

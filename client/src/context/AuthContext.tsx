@@ -11,6 +11,7 @@ interface AuthContextValue {
   login: (provider: 'google' | 'discord') => void;
   logout: () => void;
   updateProfile: (displayName: string, avatarUrl?: string) => Promise<boolean>;
+  uploadAvatar: (file: File) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -108,8 +109,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
+  const uploadAvatar = useCallback(async (file: File): Promise<string | null> => {
+    if (!token) return null;
+    try {
+      // Resize client-side to 256x256 before uploading
+      const resized = await resizeImage(file, 256);
+      const formData = new FormData();
+      formData.append('avatar', resized, `avatar.${file.type === 'image/png' ? 'png' : 'jpg'}`);
+
+      const res = await fetch(`${SERVER_URL}/auth/avatar`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) return null;
+      const { avatarUrl } = await res.json() as { avatarUrl: string };
+
+      // Update local user state with cache-busted URL
+      setUser((prev) => prev ? { ...prev, avatarUrl: `${avatarUrl}?t=${Date.now()}` } : prev);
+      return avatarUrl;
+    } catch {
+      return null;
+    }
+  }, [token]);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );
@@ -119,4 +144,38 @@ export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
+}
+
+/**
+ * Resize an image file to a square of the given size using an offscreen canvas.
+ * Crops to center square, then scales down. Returns a Blob.
+ */
+function resizeImage(file: File, size: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Crop to center square
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Failed to create blob'));
+        },
+        file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+        0.85,
+      );
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
 }
