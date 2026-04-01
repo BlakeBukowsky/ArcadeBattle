@@ -24,8 +24,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     if (isLoading) return;
 
     // For guests, send stored identity so we get the same ID back on reconnect
-    const storedGuestId = sessionStorage.getItem(GUEST_ID_KEY);
-    const storedGuestName = sessionStorage.getItem(GUEST_NAME_KEY);
+    const storedGuestId = localStorage.getItem(GUEST_ID_KEY);
+    const storedGuestName = localStorage.getItem(GUEST_NAME_KEY);
 
     const s = io(SERVER_URL, {
       auth: token
@@ -42,8 +42,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
       // Store guest identity for reconnection
       if (identity.isGuest) {
-        sessionStorage.setItem(GUEST_ID_KEY, identity.id);
-        sessionStorage.setItem(GUEST_NAME_KEY, identity.displayName);
+        localStorage.setItem(GUEST_ID_KEY, identity.id);
+        localStorage.setItem(GUEST_NAME_KEY, identity.displayName);
       }
     });
 

@@ -35,8 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error('Invalid token');
         return res.json();
       })
-      .then((data: AuthUser) => {
+      .then((data: AuthUser & { refreshedToken?: string }) => {
         setUser(data);
+        // Auto-refresh: server sends a new token if the old one is aging
+        if (data.refreshedToken) {
+          localStorage.setItem(TOKEN_KEY, data.refreshedToken);
+          setToken(data.refreshedToken);
+        }
       })
       .catch(() => {
         // Token expired or invalid

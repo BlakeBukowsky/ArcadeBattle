@@ -35,7 +35,7 @@ const CLIENT_URL = process.env.CLIENT_URL || SERVER_URL;
 // ── JWT Utilities ──
 
 export function signToken(userId: string): string {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: '30d' });
 }
 
 export function verifyToken(token: string): { sub: string } | null {
@@ -196,17 +196,25 @@ export function createAuthRouter(): Router {
       return;
     }
 
-    const payload = verifyToken(authHeader.slice(7));
+    const rawToken = authHeader.slice(7);
+    const payload = verifyToken(rawToken);
     if (!payload) { res.status(401).json({ error: 'Invalid token' }); return; }
 
     const user = findUserById(payload.sub);
     if (!user) { res.status(401).json({ error: 'User not found' }); return; }
+
+    // Auto-refresh: if token was issued more than 7 days ago, send a fresh one
+    const decoded = jwt.decode(rawToken) as { iat?: number } | null;
+    const issuedAt = decoded?.iat ?? 0;
+    const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
+    const refreshToken = ageSeconds > 7 * 24 * 60 * 60 ? signToken(user.id) : undefined;
 
     res.json({
       id: user.id,
       displayName: user.display_name,
       avatarUrl: user.avatar_url,
       isGuest: false,
+      ...(refreshToken ? { refreshedToken: refreshToken } : {}),
     });
   });
 
