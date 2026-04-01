@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 import { PositionPredictor } from '../lib/prediction.js';
-import { applyStateUpdate } from '../lib/net.js';
+import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 interface PongState {
   ball: { x: number; y: number; vx: number; vy: number };
@@ -21,17 +21,17 @@ export default function PongGame() {
   const socket = useSocket();
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<PongState | null>(null);
+  const interpRef = useRef(new StateBuffer<PongState>()).current;
   const keysRef = useRef({ up: false, down: false });
   const paddlePredictor = useRef(new PositionPredictor(0.25)).current;
 
   useEffect(() => {
     socket.on('game:state', (data: unknown) => {
-      stateRef.current = applyStateUpdate(stateRef.current, data);
+      const updated = applyStateUpdate(interpRef.latest(), data);
+      interpRef.push(updated);
       // Feed server position to predictor
-      const s = stateRef.current;
-      if (s?.paddles[myId] !== undefined) {
-        paddlePredictor.setServerPosition(0, s.paddles[myId]);
+      if (updated.paddles[myId] !== undefined) {
+        paddlePredictor.setServerPosition(0, updated.paddles[myId]);
       }
     });
     return () => { socket.off('game:state'); };
@@ -56,7 +56,7 @@ export default function PongGame() {
     function draw() {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!canvas || !ctx || !state) { animId = requestAnimationFrame(draw); return; }
 
       const W = state.canvasWidth, H = state.canvasHeight;

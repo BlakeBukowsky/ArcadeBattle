@@ -6,9 +6,9 @@ const PLAYER_W = 20, PLAYER_H = 20;
 const PLAYER_Y = H - 50;
 const MOVE_SPEED = 5;
 const BASE_ASTEROID_SPEED = 2.5;
-const SPEED_INCREASE = 0.008; // per tick — much faster ramp
-const SPAWN_INTERVAL_START = 250; // spawn much more often
-const SPAWN_INTERVAL_MIN = 60;
+const SPEED_INCREASE = 0.005;
+const SPAWN_INTERVAL_START = 400;
+const SPAWN_INTERVAL_MIN = 120;
 const ASTEROID_MIN_R = 8, ASTEROID_MAX_R = 22;
 const TICK_RATE = 1000 / 60;
 
@@ -93,13 +93,10 @@ export const asteroidDodgeGame: ServerGameModule = {
       state.speed = BASE_ASTEROID_SPEED + tickCount * SPEED_INCREASE;
 
       // Spawn asteroids — interval decreases over time
-      const spawnInterval = Math.max(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_START - tickCount * 0.8);
+      const spawnInterval = Math.max(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_START - tickCount * 0.5);
       const spawnTicks = spawnInterval / TICK_RATE;
       if (ticksSinceSpawn >= spawnTicks) {
         spawnAsteroid();
-        // Sometimes spawn 2 at once at higher speeds
-        if (state.speed > 5 && Math.random() < 0.3) spawnAsteroid();
-        if (state.speed > 8 && Math.random() < 0.3) spawnAsteroid();
         ticksSinceSpawn = 0;
       }
 

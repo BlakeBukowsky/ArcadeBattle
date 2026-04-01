@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
-import { applyStateUpdate } from '../lib/net.js';
+import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 interface Target { id: number; x: number; y: number; radius: number; }
 interface AimState {
@@ -16,10 +16,10 @@ export default function AimTrainerGame() {
   const socket = useSocket();
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<AimState | null>(null);
+  const interpRef = useRef(new StateBuffer<AimState>()).current;
 
   useEffect(() => {
-    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
+    socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 
@@ -28,7 +28,7 @@ export default function AimTrainerGame() {
     if (!canvas) return;
     function getCoords(e: MouseEvent) {
       const rect = canvas!.getBoundingClientRect();
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!state) return null;
       return { x: (e.clientX - rect.left) * (state.canvasWidth / rect.width), y: (e.clientY - rect.top) * (state.canvasHeight / rect.height) };
     }
@@ -45,7 +45,7 @@ export default function AimTrainerGame() {
     function draw() {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!canvas || !ctx || !state) { animId = requestAnimationFrame(draw); return; }
 
       canvas.width = state.canvasWidth;

@@ -37,23 +37,26 @@ The game server. Handles auth, lobbies, match orchestration, and all game logic.
 Key modules:
 - **`index.ts`** — Express + Socket.IO setup, socket event routing, static file serving in production
 - **`db.ts`** — SQLite database init, user CRUD (find, create, update), OAuth account linking
-- **`auth.ts`** — Express router: OAuth flows (Google, Discord), JWT sign/verify, `/auth/me`, `/auth/profile`
+- **`auth.ts`** — Express router: OAuth flows (Google, Discord), JWT sign/verify, `/auth/me`, `/auth/profile`, avatar upload
 - **`middleware.ts`** — Socket.IO auth middleware (JWT → user, or guest fallback), `UserSocketMap` class
 - **`lobby.ts`** — `LobbyManager` class: create/join/ready/config/disconnect, reconnection support
-- **`match.ts`** — `MatchManager` class: game selection, round lifecycle, scoring
-- **`games/`** — 11 game modules + registry + game sets
+- **`match.ts`** — `MatchManager` class: game selection, round lifecycle, scoring. Wraps game emit with network optimizer.
+- **`net-optimizer.ts`** — Send rate throttling (60fps physics → 20fps network) and delta compression. Transparent layer between game logic and Socket.IO.
+- **`games/`** — 13 game modules + registry + game sets
 
 ### `client/`
 
 The React frontend. Renders UI and game visuals, sends player inputs to server.
 
 Key modules:
-- **`context/AuthContext.tsx`** — OAuth login (popup flow), JWT storage, profile updates
+- **`context/AuthContext.tsx`** — OAuth login (popup flow), JWT storage, profile updates, avatar upload
 - **`context/SocketContext.tsx`** — Socket.IO connection with auth token, guest ID persistence
 - **`context/GameContext.tsx`** — UI state: current screen, lobby state, match data
 - **`screens/`** — Home, Profile, Lobby, LobbyNotFound, Transition, Playing, GameOver
-- **`games/`** — 11 client-side game renderers + registry
-- **`lib/sprites.ts`** — Sprite rendering system with skin support
+- **`games/`** — 13 client-side game renderers + registry
+- **`lib/sprites.ts`** — Sprite and background rendering system with skin support
+- **`lib/prediction.ts`** — Client-side input prediction (PositionPredictor, StateInterpolator)
+- **`lib/net.ts`** — Delta state merging for network-optimized updates
 
 ## Authentication
 
@@ -128,7 +131,7 @@ Player 1                    Server                     Player 2
   │   (TRANSITION_SECONDS) │
   │ match:roundStart ─────┤──────────► (gameId)
   │                       │
-  │ game:state ◄──────────┤──────────► (tick loop, ~30-60fps)
+  │ game:state ◄──────────┤──────────► (throttled to ~20fps, delta-compressed)
   │ game:input ──────────►│◄────────── (player inputs)
   │                       │
   │ (game calls endRound) │
@@ -253,7 +256,79 @@ loadSpriteSheet('ball', '/sprites/ball.png', 32, 32);           // default
 loadSpriteSheet('usr_abc.ball', '/skins/usr_abc/ball.png', 32, 32); // skin
 ```
 
+### Background System
+
+Backgrounds use the same sprite cache with a game-specific cascade:
+
+```typescript
+drawBackground(ctx, 'pong', 800, 500, { color: '#1a1a2e' });
+// Cascade: "pong.bg" sheet → "bg" sheet → solid color fill
+
+drawBackgroundLayer(ctx, 'flappy-race', 'clouds', 800, 500, { scrollX: offset, parallax: 0.3 });
+// Cascade: "flappy-race.bg-clouds" → "bg-clouds" → no-op (layers are optional)
+```
+
+Supports scrolling (`scrollX`/`scrollY`), parallax depth multipliers, and tile mode for repeating patterns.
+
 See [sprite-requirements.md](sprite-requirements.md) for the full catalog of entities needing sprites.
+
+## Network Optimization
+
+The server runs game physics at 60fps but network transmission is optimized to reduce bandwidth and latency impact.
+
+### Send Rate Throttling
+
+`server/src/net-optimizer.ts` wraps each game's `ctx.emit` transparently:
+
+- **Physics**: 60fps (16.7ms) — unchanged, games don't know about the optimizer
+- **Network**: 20fps (50ms) — the latest state is buffered and sent at the throttled rate
+- **Non-game events** (match transitions, round starts) pass through immediately
+
+### Delta Compression
+
+Instead of sending the full state every frame:
+
+```
+Full state:  { _full: true, ball: {x:100,y:200}, paddles: {...}, scores: {...}, canvasWidth: 800, canvasHeight: 500 }
+Delta state: { _delta: true, ball: {x:105,y:198} }
+```
+
+- Only changed fields are sent (deep comparison)
+- Nested objects are recursively diffed
+- Arrays that changed are sent in full (no element-level diffing)
+- Every 10th send is a full state for reliability (recover from dropped deltas)
+
+### Client-Side Handling
+
+`client/src/lib/net.ts` provides `applyStateUpdate()`:
+
+```typescript
+socket.on('game:state', (data: unknown) => {
+  stateRef.current = applyStateUpdate(stateRef.current, data);
+  // Handles both _full and _delta messages automatically
+});
+```
+
+### Client-Side Prediction
+
+`client/src/lib/prediction.ts` provides `PositionPredictor` for reducing perceived input lag:
+
+- Local player's inputs are applied immediately on the client
+- Server corrections are blended smoothly (lerp toward authoritative position)
+- Currently used by Pong; available for all keyboard-movement games
+
+```typescript
+const predictor = new PositionPredictor(0.25); // correction rate
+predictor.applyInput(0, -PADDLE_SPEED);        // local input — instant
+predictor.setServerPosition(0, serverY);        // server correction — blended
+const { x, y } = predictor.getPosition();      // render this
+```
+
+### Impact
+
+- ~3x fewer network messages (60fps → 20fps)
+- ~40-70% smaller messages (delta compression)
+- Physics fidelity unchanged (still 60fps server-side)
 
 ## Database Schema
 

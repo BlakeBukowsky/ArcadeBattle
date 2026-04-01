@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
-import { applyStateUpdate } from '../lib/net.js';
+import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PLAYER_W = 24, PLAYER_H = 28;
 
@@ -18,10 +18,10 @@ export default function JoustGame() {
   const socket = useSocket();
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<JoustState | null>(null);
+  const interpRef = useRef(new StateBuffer<JoustState>()).current;
 
   useEffect(() => {
-    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
+    socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 
@@ -48,7 +48,7 @@ export default function JoustGame() {
     function draw() {
       const canvas = canvasRef.current;
       const c = canvas?.getContext('2d');
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!canvas || !c || !state) { animId = requestAnimationFrame(draw); return; }
 
       canvas.width = state.canvasWidth;

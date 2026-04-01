@@ -105,6 +105,45 @@ Canvas size for all games: **800×500** (except Fencing which uses an 800×400 v
 | Window frame | Dark rect | 58×63 | No | No |
 | Building facade | Brown fill | 800×500 | No | Texture with bricks/detail |
 
+### Arrow Sequence
+| Sprite | Current | Size | Facing | Animation |
+|--------|---------|------|--------|-----------|
+| Arrow shapes | Procedural polygon (→↓↑←) | 36×36 | Rotated per direction | No — color-coded (green=done, white=current, gray=pending) |
+| Sequence backgrounds | Translucent rect per arrow slot | 36×36 | No | No |
+
+*Note: This game uses procedural arrow drawing, not sprites. Could be replaced with arrow sprite sheets for a polished look.*
+
+### Rhythm Rush
+| Sprite | Current | Size | Facing | Animation |
+|--------|---------|------|--------|-----------|
+| Arrow (falling) | Procedural polygon (←↓↑→) | 36×36 | Rotated per direction | Color changes by proximity (white→yellow→green) |
+| Hit zone arrow (ghost) | Same shape, translucent | 36×36 | Per lane | No |
+| Lane dividers | Thin lines | 1px wide | No | No |
+
+*Note: Same as Arrow Sequence — procedural arrows that could be replaced with sprite sheets.*
+
+---
+
+## Background Images
+
+Each game can have a background image loaded via `loadSpriteSheet('{gameId}.bg', ...)`. Current games use solid color fills as placeholders. Parallax layers are supported via `drawBackgroundLayer()`.
+
+| Game | Fallback Color | Ideal Background |
+|------|---------------|-----------------|
+| Pong | `#1a1a2e` | Dark arena with neon trim |
+| Aim Trainer | `#1a1a2e` | Shooting range / target gallery |
+| Joust | `#1a1a2e` | Volcanic cave with lava below |
+| Air Hockey | `#1a3a2e` | Air hockey table texture |
+| Volleyball | `#1a1a2e` | Beach or gym court |
+| Ball Brawl | `#1a1a2e` | Street / alley arena |
+| Fencing | `#1a1a2e` | Castle hallway (scrolls with camera) |
+| Asteroid Dodge | `#0a0a1a` | Starfield |
+| Flappy Race | `#0a1628` | Sky with clouds (parallax layers) |
+| Space Invaders | `#0a0a1a` | Starfield |
+| Cowboy Shootout | `#3a2a1a` | Western saloon facade |
+| Arrow Sequence | `#0a0a1a` | Abstract pattern |
+| Rhythm Rush | `#0a0a1a` | Concert stage / neon dance floor |
+
 ---
 
 ## Priority Order for Art

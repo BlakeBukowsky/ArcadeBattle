@@ -55,12 +55,96 @@ export function applyStateUpdate<T>(current: T | null, update: unknown): T {
   const msg = update as AnyObject;
 
   if (msg._full || !current) {
-    // Full state — strip markers and use as-is
     const { _full: _, _delta: __, ...state } = msg;
     return state as T;
   }
 
-  // Delta — merge into current
   const { _delta: _, ...delta } = msg;
   return deepMerge(current as unknown as AnyObject, delta) as T;
+}
+
+// ── Client-side Interpolation ──
+
+/**
+ * Interpolation buffer that smoothly blends between server state updates.
+ * Games receive state at ~30fps but render at 60fps. This fills the gaps
+ * by lerping numeric values between the previous and current server states.
+ *
+ * Usage:
+ *   const interp = useRef(new StateBuffer<GameState>()).current;
+ *
+ *   // On server update:
+ *   socket.on('game:state', (data) => {
+ *     interp.push(applyStateUpdate(interp.latest(), data));
+ *   });
+ *
+ *   // In draw loop:
+ *   const state = interp.interpolate();
+ */
+export class StateBuffer<T> {
+  private prev: T | null = null;
+  private current: T | null = null;
+  private lastUpdateTime = 0;
+  private updateInterval = 33; // estimated server send interval (ms)
+
+  /** Push a new server state snapshot. */
+  push(state: T): void {
+    const now = Date.now();
+    if (this.current !== null) {
+      const dt = now - this.lastUpdateTime;
+      // Smooth the interval estimate
+      if (dt > 5 && dt < 200) {
+        this.updateInterval = this.updateInterval * 0.7 + dt * 0.3;
+      }
+    }
+    this.prev = this.current;
+    this.current = state;
+    this.lastUpdateTime = now;
+  }
+
+  /** Get the latest raw state (for applyStateUpdate chaining). */
+  latest(): T | null {
+    return this.current;
+  }
+
+  /**
+   * Get an interpolated state for smooth rendering.
+   * Lerps all numeric fields in the top two levels between prev and current.
+   */
+  interpolate(): T | null {
+    if (!this.current) return null;
+    if (!this.prev) return this.current;
+
+    const elapsed = Date.now() - this.lastUpdateTime;
+    const t = Math.min(1, elapsed / this.updateInterval);
+
+    return lerpState(this.prev, this.current, t);
+  }
+}
+
+/** Lerp between two state objects. Only interpolates numbers; copies everything else from `b`. */
+function lerpState<T>(a: T, b: T, t: number): T {
+  if (a === null || b === null) return b;
+  if (typeof a !== 'object' || typeof b !== 'object') return b;
+  if (Array.isArray(a) || Array.isArray(b)) return b;
+
+  const result = { ...(b as AnyObject) } as AnyObject;
+
+  for (const key of Object.keys(result)) {
+    const av = (a as AnyObject)[key];
+    const bv = result[key];
+
+    if (typeof av === 'number' && typeof bv === 'number') {
+      result[key] = av + (bv - av) * t;
+    } else if (
+      av && bv &&
+      typeof av === 'object' && typeof bv === 'object' &&
+      !Array.isArray(av) && !Array.isArray(bv)
+    ) {
+      result[key] = lerpState(av, bv, t);
+    }
+    // Non-numeric fields snap to current value (strings, booleans, arrays)
+  }
+
+  return result as T;
 }

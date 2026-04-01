@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
-import { applyStateUpdate } from '../lib/net.js';
+import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PLAYER_W = 30, PLAYER_H = 40, BALL_R = 12, NET_W = 6;
 
@@ -18,10 +18,10 @@ export default function VolleyballGame() {
   const socket = useSocket();
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<VolleyState | null>(null);
+  const interpRef = useRef(new StateBuffer<VolleyState>()).current;
 
   useEffect(() => {
-    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
+    socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 
@@ -46,7 +46,7 @@ export default function VolleyballGame() {
     function draw() {
       const canvas = canvasRef.current;
       const c = canvas?.getContext('2d');
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!canvas || !c || !state) { animId = requestAnimationFrame(draw); return; }
 
       const W = state.canvasWidth, H = state.canvasHeight;

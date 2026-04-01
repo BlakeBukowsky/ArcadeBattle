@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawLabel, drawBackground } from '../lib/sprites.js';
-import { applyStateUpdate } from '../lib/net.js';
+import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -31,11 +31,11 @@ export default function ArrowSequenceGame() {
   const socket = useSocket();
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<ArrowSequenceState | null>(null);
+  const interpRef = useRef(new StateBuffer<ArrowSequenceState>()).current;
   const flashRef = useRef<{ time: number; correct: boolean }>({ time: 0, correct: true });
 
   useEffect(() => {
-    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
+    socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 
@@ -48,7 +48,7 @@ export default function ArrowSequenceGame() {
       if (e.key === 'ArrowRight' || e.key === 'd') dir = 'right';
       if (dir) {
         e.preventDefault();
-        const state = stateRef.current;
+        const state = interpRef.interpolate();
         if (state) {
           const p = state.players[myId];
           if (p && !p.completed) {
@@ -68,7 +68,7 @@ export default function ArrowSequenceGame() {
     function draw() {
       const canvas = canvasRef.current;
       const c = canvas?.getContext('2d');
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!canvas || !c || !state) { animId = requestAnimationFrame(draw); return; }
 
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;

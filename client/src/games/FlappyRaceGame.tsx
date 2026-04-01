@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
-import { applyStateUpdate } from '../lib/net.js';
+import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const BIRD_X = 80, BIRD_R = 12, PIPE_W = 40, GAP_H = 120;
 
@@ -17,10 +17,10 @@ export default function FlappyRaceGame() {
   const socket = useSocket();
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<FlappyState | null>(null);
+  const interpRef = useRef(new StateBuffer<FlappyState>()).current;
 
   useEffect(() => {
-    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
+    socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 
@@ -39,7 +39,7 @@ export default function FlappyRaceGame() {
     function draw() {
       const canvas = canvasRef.current;
       const c = canvas?.getContext('2d');
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!canvas || !c || !state) { animId = requestAnimationFrame(draw); return; }
 
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;

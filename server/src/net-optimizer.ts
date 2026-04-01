@@ -8,7 +8,7 @@
  * Games don't need to change — the optimizer wraps ctx.emit transparently.
  */
 
-const DEFAULT_SEND_RATE = 1000 / 20; // 20 sends per second (50ms interval)
+const DEFAULT_SEND_RATE = 1000 / 30; // 30 sends per second (33ms interval)
 
 /**
  * Deep comparison that returns only the changed fields.

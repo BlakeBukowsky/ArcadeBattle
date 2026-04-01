@@ -160,13 +160,12 @@ export const cowboyShootoutGame: ServerGameModule = {
           }
         }
 
-        // Bandit shooting logic
+        // Bandit shooting logic — bandits shoot at any non-stunned player
         if (bandit.visible && !bandit.windingUp && now >= bandit.shootTime) {
-          // Pick a random peeking player to target, or any player
-          const peekingPlayers = ctx.players.filter((pid) => state.players[pid].peeking && !state.players[pid].stunned);
-          if (peekingPlayers.length > 0) {
+          const targetablePlayers = ctx.players.filter((pid) => !state.players[pid].stunned);
+          if (targetablePlayers.length > 0) {
             bandit.windingUp = true;
-            bandit.targetPlayer = peekingPlayers[Math.floor(Math.random() * peekingPlayers.length)];
+            bandit.targetPlayer = targetablePlayers[Math.floor(Math.random() * targetablePlayers.length)];
             bandit.shootTime = now + BANDIT_SHOOT_WINDUP;
           }
         }

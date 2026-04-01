@@ -116,13 +116,11 @@ export const joustGame: ServerGameModule = {
         // Platform collision
         checkPlatformCollision(p);
 
-        // Ceiling
-        if (p.y < 0) { p.y = 0; p.vy = 0; }
+        // Vertical wrapping (prevents ceiling camping)
+        if (p.y < -PLAYER_H) p.y = H;
+        if (p.y > H) p.y = -PLAYER_H;
 
-        // Death pit (below floor)
-        if (p.y > H + 50) {
-          respawn(pid);
-        }
+        // (vertical wrapping handles top/bottom)
       }
 
       // Player collision

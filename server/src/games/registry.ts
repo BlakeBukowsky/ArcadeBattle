@@ -5,14 +5,14 @@ import { aimTrainerGame } from './aim-trainer.js';
 import { joustGame } from './joust.js';
 import { airHockeyGame } from './air-hockey.js';
 import { volleyballGame } from './volleyball.js';
-import { ballBrawlGame } from './ball-brawl.js';
-import { fencingGame } from './fencing.js';
 import { asteroidDodgeGame } from './asteroid-dodge.js';
 import { flappyRaceGame } from './flappy-race.js';
 import { spaceInvadersGame } from './space-invaders.js';
 import { cowboyShootoutGame } from './cowboy-shootout.js';
 import { arrowSequenceGame } from './arrow-sequence.js';
 import { rhythmGame } from './rhythm.js';
+import { typingRaceGame } from './typing-race.js';
+import { memoryArrowsGame } from './memory-arrows.js';
 
 class GameRegistry {
   private games = new Map<string, ServerGameModule>();
@@ -57,14 +57,14 @@ gameRegistry.register(aimTrainerGame);
 gameRegistry.register(joustGame);
 gameRegistry.register(airHockeyGame);
 gameRegistry.register(volleyballGame);
-gameRegistry.register(ballBrawlGame);
-gameRegistry.register(fencingGame);
 gameRegistry.register(asteroidDodgeGame);
 gameRegistry.register(flappyRaceGame);
 gameRegistry.register(spaceInvadersGame);
 gameRegistry.register(cowboyShootoutGame);
 gameRegistry.register(arrowSequenceGame);
 gameRegistry.register(rhythmGame);
+gameRegistry.register(typingRaceGame);
+gameRegistry.register(memoryArrowsGame);
 
 // Register game sets
 gameRegistry.registerSet({

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawLabel, drawBackground } from '../lib/sprites.js';
-import { applyStateUpdate } from '../lib/net.js';
+import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -39,10 +39,11 @@ export default function RhythmGame() {
   const socket = useSocket();
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<RhythmState | null>(null);
+  const interpRef = useRef(new StateBuffer<RhythmState>()).current;
+  const pressRef = useRef<{ dir: string; time: number }>({ dir: '', time: 0 });
 
   useEffect(() => {
-    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
+    socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 
@@ -53,7 +54,11 @@ export default function RhythmGame() {
       if (e.key === 'ArrowDown' || e.key === 's') dir = 'down';
       if (e.key === 'ArrowLeft' || e.key === 'a') dir = 'left';
       if (e.key === 'ArrowRight' || e.key === 'd') dir = 'right';
-      if (dir) { e.preventDefault(); socket.emit('game:input', { direction: dir }); }
+      if (dir) {
+        e.preventDefault();
+        pressRef.current = { dir, time: Date.now() };
+        socket.emit('game:input', { direction: dir });
+      }
     }
     window.addEventListener('keydown', kd);
     return () => window.removeEventListener('keydown', kd);
@@ -64,7 +69,7 @@ export default function RhythmGame() {
     function draw() {
       const canvas = canvasRef.current;
       const c = canvas?.getContext('2d');
-      const state = stateRef.current;
+      const state = interpRef.interpolate();
       if (!canvas || !c || !state) { animId = requestAnimationFrame(draw); return; }
 
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
@@ -99,9 +104,17 @@ export default function RhythmGame() {
         c.strokeStyle = '#ffffff44'; c.lineWidth = 2;
         c.beginPath(); c.moveTo(lanesX, state.hitZoneY); c.lineTo(lanesX + LANE_TOTAL, state.hitZoneY); c.stroke();
 
-        // Target outlines
+        // Target outlines + input flash
+        const pressAge = Date.now() - pressRef.current.time;
         for (let i = 0; i < LANE_DIRS.length; i++) {
-          drawArrowShape(c, lanesX + i * LANE_WIDTH + LANE_WIDTH / 2, state.hitZoneY, ARROW_SIZE, LANE_DIRS[i], '#ffffff18');
+          const laneDir = LANE_DIRS[i];
+          const lx = lanesX + i * LANE_WIDTH + LANE_WIDTH / 2;
+          const pressed = isMe && pressRef.current.dir === laneDir && pressAge < 120;
+          drawArrowShape(c, lx, state.hitZoneY, ARROW_SIZE, laneDir, pressed ? '#ffffff88' : '#ffffff18');
+          if (pressed) {
+            c.fillStyle = '#ffffff11';
+            c.fillRect(lanesX + i * LANE_WIDTH, 0, LANE_WIDTH, H);
+          }
         }
 
         // Arrows

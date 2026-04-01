@@ -72,22 +72,26 @@ ArcadeBattle/
 │       ├── middleware.ts    # Socket.IO auth middleware, UserSocketMap
 │       ├── lobby.ts         # Lobby management
 │       ├── match.ts         # Match orchestration (round management, scoring)
-│       └── games/           # Server-side game logic (11 games)
+│       ├── net-optimizer.ts # Network optimization (send rate throttle, delta compression)
+│       └── games/           # Server-side game logic (13 games)
 │           ├── registry.ts
 │           ├── pong.ts, aim-trainer.ts, joust.ts, air-hockey.ts,
 │           ├── volleyball.ts, ball-brawl.ts, fencing.ts,
 │           ├── asteroid-dodge.ts, flappy-race.ts,
-│           ├── space-invaders.ts, cowboy-shootout.ts
+│           ├── space-invaders.ts, cowboy-shootout.ts,
+│           ├── arrow-sequence.ts, rhythm.ts
 │   └── data/                # SQLite database file (gitignored)
 ├── client/                  # React + Vite + TypeScript
 │   └── src/
 │       ├── App.tsx          # Root component, socket event routing
 │       ├── context/         # React contexts (Auth, Socket, Game state)
 │       ├── screens/         # UI screens (Home, Profile, Lobby, Transition, etc.)
-│       ├── games/           # Client-side game renderers (11 games)
+│       ├── games/           # Client-side game renderers (13 games)
 │       │   └── registry.tsx
 │       └── lib/
-│           └── sprites.ts   # Sprite rendering system (with skin support)
+│           ├── sprites.ts   # Sprite rendering system (with skin + background support)
+│           ├── prediction.ts # Client-side input prediction for lag mitigation
+│           └── net.ts       # Delta state merging for network-optimized updates
 ├── docs/
 │   ├── architecture.md      # System architecture deep-dive
 │   ├── adding-games.md      # Guide to creating new mini-games
@@ -103,12 +107,12 @@ ArcadeBattle/
 | Backend | Node.js, Express 5, Socket.IO |
 | Database | SQLite (better-sqlite3) |
 | Auth | OAuth 2.0 (Google, Discord), JWT |
-| Networking | WebSockets (Socket.IO) — server-authoritative |
+| Networking | WebSockets (Socket.IO) — server-authoritative, delta-compressed |
 | Rendering | HTML5 Canvas with sprite system |
 | Deployment | Railway (single service) |
 | Monorepo | npm workspaces |
 
-## Current Games (11)
+## Current Games (13)
 
 | Game | Type | Controls | Win Condition |
 |------|------|----------|--------------|
@@ -123,6 +127,8 @@ ArcadeBattle/
 | Flappy Race | Split-screen | W/Space flap | Last alive |
 | Space Invaders | Split-screen | A/D, Space shoot | Clear wave or survive |
 | Cowboy Shootout | Shared screen | Right-click peek, Left-click shoot | Most kills in 30s |
+| Arrow Sequence | Split-screen | Arrows or WASD | Clear 5 sequences first |
+| Rhythm Rush | Split-screen | Arrows or WASD | Miss 3 = lose |
 
 ## Scripts
 

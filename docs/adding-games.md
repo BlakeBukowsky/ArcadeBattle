@@ -75,6 +75,7 @@ export const yourGame: ServerGameModule = {
       }
 
       // Send state to both players every tick
+      // (automatically throttled to 20fps and delta-compressed by the net optimizer)
       ctx.emit('game:state', state);
     }, TICK_RATE);
 
@@ -109,6 +110,7 @@ export const yourGame: ServerGameModule = {
 5. **Always check `if (!running)` return** at the top of intervals and input handlers to avoid acting after cleanup.
 6. **The server is the source of truth** — never trust client input for scoring. Validate everything server-side.
 7. **Include controls in the description** — this is shown on the transition screen before the game starts.
+8. **Network optimization is automatic** — `ctx.emit('game:state', ...)` is throttled to 20fps and delta-compressed by the match system. You don't need to do anything special — just emit full state every tick and the optimizer handles the rest.
 
 ### The MatchContext API
 
@@ -135,7 +137,9 @@ Create a new file in `client/src/games/YourGame.tsx`.
 
 ```tsx
 import { useEffect, useRef } from 'react';
-import { useSocket } from '../context/SocketContext.tsx';
+import { useSocket, useMyId } from '../context/SocketContext.tsx';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 // Match the state interface from your server module
 interface YourGameState {
@@ -146,16 +150,16 @@ interface YourGameState {
 
 export default function YourGame() {
   const socket = useSocket();
+  const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<YourGameState | null>(null);
 
-  // Listen for game state updates
+  // Listen for game state updates (handles both full and delta messages)
   useEffect(() => {
-    function handleState(s: YourGameState) {
-      stateRef.current = s;
-    }
-    socket.on('game:state', handleState);
-    return () => { socket.off('game:state', handleState); };
+    socket.on('game:state', (data: unknown) => {
+      stateRef.current = applyStateUpdate(stateRef.current, data);
+    });
+    return () => { socket.off('game:state'); };
   }, [socket]);
 
   // Handle player input
@@ -184,11 +188,12 @@ export default function YourGame() {
       canvas.width = 800;
       canvas.height = 500;
 
-      // Clear and draw
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Background (uses sprite system — auto-upgrades when bg image is loaded)
+      drawBackground(ctx, 'your-game', canvas.width, canvas.height, { color: '#1a1a2e' });
 
-      // Draw your game here using state data
+      // Draw your game here using sprite API
+      // drawSprite(ctx, 'player', x, y, w, h, { color: '#00ff88', skin: playerId });
+      // drawSpriteCircle(ctx, 'ball', cx, cy, r, { color: '#fff' });
       // ...
 
       // Draw scores
@@ -259,7 +264,9 @@ export default function YourGame() {
 4. **Send inputs immediately** — don't debounce or throttle game inputs. The server handles rate limiting if needed.
 5. **Don't compute game logic client-side** — just render what the server sends. The client is a dumb terminal.
 6. **Use `useMyId()` to identify "you" vs "opponent"** — import from `'../context/SocketContext.tsx'`. This returns the persistent userId (not socket.id).
-7. **Use the sprite system for rendering** — import `drawSprite`, `drawSpriteCircle`, `drawLabel` from `'../lib/sprites.js'`. Pass `{ skin: playerId }` in options to enable player skin lookup. Falls back to colored shapes when no sprite sheets are loaded.
+7. **Use the sprite system for rendering** — import `drawSprite`, `drawSpriteCircle`, `drawLabel`, `drawBackground` from `'../lib/sprites.js'`. Pass `{ skin: playerId }` in options to enable player skin lookup. Falls back to colored shapes when no sprite sheets are loaded.
+8. **Use `applyStateUpdate` for state handling** — import from `'../lib/net.js'`. Handles both full state and delta-compressed updates from the server automatically. See template above.
+9. **For lag-sensitive games, consider client-side prediction** — import `PositionPredictor` from `'../lib/prediction.js'` to apply local movement instantly while smoothly correcting toward server state. See Pong for a reference implementation.
 
 ## Step 4: Register the Game
 
@@ -329,11 +336,12 @@ Games in the "All" set (empty `gameIds`) are automatically included.
   - [ ] Calls `ctx.endRound()` exactly once
   - [ ] Description includes controls
 - [ ] Client component in `client/src/games/`
-  - [ ] Listens on `game:state`, sends via `game:input`
+  - [ ] Uses `applyStateUpdate()` from `lib/net.js` for `game:state` handler
   - [ ] Cleans up event listeners
   - [ ] Uses refs for canvas state (not React state)
   - [ ] Uses `useMyId()` not `socket.id` for identity
-  - [ ] Uses sprite system (`drawSprite` / `drawSpriteCircle`) for rendering
+  - [ ] Uses sprite system (`drawSprite` / `drawSpriteCircle` / `drawBackground`) for rendering
+  - [ ] Uses `drawBackground()` instead of raw `fillRect` for background
 - [ ] Registered in both server and client registries
 - [ ] Game IDs match between server and client
 - [ ] Works with two browser tabs locally
