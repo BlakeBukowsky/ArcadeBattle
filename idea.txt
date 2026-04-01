@@ -1,0 +1,21 @@
+Working Title: "Arcade Battle"
+
+The concept for this project is for an online site where two players get matched up and play a set of random 1v1 arcade games.
+Each round is a different game, and the players play best of 5.
+
+The main page lets you create a lobby. Doing so creates an invite link you can send to whoever you want to play against.
+Once both players are in lobby and both are "readied" up, the game starts after 5 seconds.
+When switching from the lobby to a game or from a game to a game, there should be a screen with the game title and current score.
+Once the game ends, there is a game over page wher you can see the winner, the final score, what games were played and who won each.
+There is also a play again button.
+
+The game set should be full of short 1v1 games.
+
+Things to figure out:
+Where do we pull games from?
+How to network what is essencially a competitive online game server.
+
+Out of scope (for now):
+Matchmaking
+Custom game sets
+2v2 or free for all games

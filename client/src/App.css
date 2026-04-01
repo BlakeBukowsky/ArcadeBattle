@@ -1,0 +1,573 @@
+.app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading {
+  color: #888;
+  font-size: 1.2rem;
+}
+
+/* ── Screens ── */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  width: 100%;
+  max-width: 900px;
+}
+
+/* ── Home ── */
+
+.title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, #00ff88, #00bbff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+/* ── Auth Section ── */
+
+.auth-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #222;
+  width: 100%;
+  max-width: 400px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.user-avatar, .player-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #ccc;
+}
+
+.sign-in-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sign-in-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.sign-in-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-oauth {
+  padding: 0.5rem 1rem;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #1a1a2e;
+  color: #ccc;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-oauth:hover {
+  border-color: #00ff88;
+  color: #fff;
+}
+
+/* ── Buttons ── */
+
+.btn {
+  padding: 0.8rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00ff88, #00cc66);
+  color: #000;
+}
+
+.btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.btn-secondary {
+  background: #333;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background: #444;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-small:hover {
+  background: #555;
+}
+
+/* ── Lobby ── */
+
+.invite-box {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.2rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.invite-box p {
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.invite-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.invite-link code {
+  flex: 1;
+  background: #0a0a1a;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  word-break: break-all;
+  text-align: left;
+}
+
+.players {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.player-card {
+  background: #1a1a2e;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 150px;
+  transition: border-color 0.3s;
+}
+
+.player-card.ready {
+  border-color: #00ff88;
+}
+
+.player-card.end-screen {
+  border-color: #ffaa00;
+}
+
+.player-card.end-screen .player-status {
+  color: #ffaa00;
+}
+
+.player-card.empty {
+  border-style: dashed;
+  opacity: 0.5;
+}
+
+.player-label {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.player-status {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.player-card.ready .player-status {
+  color: #00ff88;
+}
+
+.you-tag {
+  font-size: 0.75rem;
+  color: #00bbff;
+}
+
+.countdown {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffaa00;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Lobby Not Found ── */
+
+.lobby-not-found-screen h1 {
+  font-size: 2.5rem;
+  color: #ff4488;
+}
+
+.error-message {
+  color: #aaa;
+  font-size: 1.1rem;
+  max-width: 400px;
+}
+
+/* ── Lobby Config ── */
+
+.lobby-config {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.2rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.config-row label {
+  font-weight: 600;
+  color: #ccc;
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.points-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 180px;
+  height: 6px;
+  border-radius: 3px;
+  background: #333;
+  outline: none;
+  cursor: pointer;
+}
+
+.points-slider:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.points-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #00ff88;
+  border: none;
+  cursor: pointer;
+}
+
+.points-slider:disabled::-webkit-slider-thumb {
+  background: #666;
+  cursor: default;
+}
+
+.points-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #00ff88;
+  border: none;
+  cursor: pointer;
+}
+
+.points-slider:disabled::-moz-range-thumb {
+  background: #666;
+  cursor: default;
+}
+
+.slider-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #00ff88;
+  min-width: 2ch;
+  text-align: center;
+}
+
+.config-value {
+  color: #888;
+}
+
+.config-note {
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* ── Transition ── */
+
+.transition-screen {
+  gap: 1rem;
+}
+
+.round-info {
+  font-size: 1rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.score-divider {
+  color: #555;
+}
+
+.game-title {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #00ff88;
+}
+
+.game-desc {
+  font-size: 1.1rem;
+  color: #aaa;
+  max-width: 400px;
+}
+
+.prev-result {
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+}
+
+.prev-result.win {
+  color: #00ff88;
+  background: #00ff8815;
+}
+
+.prev-result.lose {
+  color: #ff4488;
+  background: #ff448815;
+}
+
+/* ── Playing ── */
+
+.playing-screen {
+  padding: 0;
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.game-canvas {
+  border: 2px solid #333;
+  border-radius: 4px;
+  max-width: 100%;
+  height: auto;
+}
+
+.controls-hint {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* ── Reaction Race ── */
+
+.reaction-game {
+  width: 100%;
+  max-width: 600px;
+}
+
+.reaction-scores {
+  display: flex;
+  gap: 2rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.reaction-round-info {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.reaction-zone {
+  width: 100%;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 2rem;
+  font-weight: 700;
+  transition: background 0.15s;
+  user-select: none;
+  outline: none;
+}
+
+.reaction-zone.waiting {
+  background: #1a1a2e;
+}
+
+.reaction-zone.ready {
+  background: #8b0000;
+}
+
+.reaction-zone.go {
+  background: #006600;
+}
+
+.reaction-zone.result {
+  background: #1a1a2e;
+}
+
+.reaction-zone.finished {
+  background: #1a1a2e;
+}
+
+/* ── Game Over ── */
+
+.game-over-screen.win h1 {
+  font-size: 3rem;
+  color: #00ff88;
+}
+
+.game-over-screen.lose h1 {
+  font-size: 3rem;
+  color: #ff4488;
+}
+
+.final-score {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.round-history {
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.round-history h2 {
+  font-size: 1rem;
+  color: #888;
+  margin-bottom: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.round-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #222;
+}
+
+.round-entry:last-child {
+  border-bottom: none;
+}
+
+.round-number {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.round-game {
+  flex: 1;
+  text-align: center;
+}
+
+.round-result {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.round-entry.won .round-result {
+  color: #00ff88;
+}
+
+.round-entry.lost .round-result {
+  color: #ff4488;
+}
+
+.game-over-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.lobby-home-btn {
+  margin-top: 0.5rem;
+  opacity: 0.6;
+}
+
+.lobby-home-btn:hover {
+  opacity: 1;
+}

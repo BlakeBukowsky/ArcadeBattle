@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 5 npm run dev:server)",
+      "Bash(npx vite:*)",
+      "Bash(railway --version)",
+      "Bash(gh auth:*)",
+      "Bash(git --version)",
+      "Bash(git -C C:/Users/blake/Code/ArcadeBattle remote -v)"
+    ]
+  }
+}
