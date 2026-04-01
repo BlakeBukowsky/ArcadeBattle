@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 const WINDOW_W = 50, WINDOW_H = 55;
 const WINDOW_Y_START = 50, WINDOW_ROW_GAP = 90;
@@ -28,7 +29,7 @@ export default function CowboyShootoutGame() {
   const stateRef = useRef<CowboyState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: CowboyState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

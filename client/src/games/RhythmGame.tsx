@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -41,7 +42,7 @@ export default function RhythmGame() {
   const stateRef = useRef<RhythmState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: RhythmState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

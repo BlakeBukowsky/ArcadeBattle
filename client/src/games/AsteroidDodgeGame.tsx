@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 const PLAYER_W = 20, PLAYER_H = 20, PLAYER_Y = 450;
 
@@ -21,7 +22,7 @@ export default function AsteroidDodgeGame() {
   const stateRef = useRef<AsteroidDodgeState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: AsteroidDodgeState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

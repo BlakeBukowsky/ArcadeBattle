@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 const PLAYER_W = 24, PLAYER_H = 28;
 
@@ -20,7 +21,7 @@ export default function JoustGame() {
   const stateRef = useRef<JoustState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: JoustState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

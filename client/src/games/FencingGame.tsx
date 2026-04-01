@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 const PLAYER_W = 20, PLAYER_H = 44, SWORD_LEN = 35, SWORD_W = 3;
 
@@ -25,7 +26,7 @@ export default function FencingGame() {
   const stateRef = useRef<FencingState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: FencingState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

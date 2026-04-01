@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 const PLAYER_W = 24, PLAYER_H = 16;
 const INVADER_W = 22, INVADER_H = 16, INVADER_SPACING_X = 36, INVADER_SPACING_Y = 28;
@@ -27,7 +28,7 @@ export default function SpaceInvadersGame() {
   const stateRef = useRef<SpaceInvadersState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: SpaceInvadersState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

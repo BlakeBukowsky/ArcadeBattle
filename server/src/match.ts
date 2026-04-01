@@ -11,6 +11,7 @@ import type {
 } from '@arcade-battle/shared';
 import { TRANSITION_SECONDS } from '@arcade-battle/shared';
 import type { UserSocketMap } from './middleware.js';
+import { createOptimizedEmitter } from './net-optimizer.js';
 
 interface GameRegistry {
   getAll(): ServerGameModule[];
@@ -28,6 +29,7 @@ interface ActiveMatch {
   rounds: RoundResult[];
   gameOrder: string[];
   currentGame: GameInstance | null;
+  emitterCleanup: (() => void) | null;
 }
 
 export class MatchManager {
@@ -71,6 +73,7 @@ export class MatchManager {
       rounds: [],
       gameOrder,
       currentGame: null,
+      emitterCleanup: null,
     };
 
     this.matches.set(lobbyId, match);
@@ -113,11 +116,16 @@ export class MatchManager {
     const gameModule = this.registry.get(gameId);
     if (!gameModule) return;
 
+    // Wrap emit with network optimizer (send rate throttling + delta compression)
+    const rawEmit = (event: string, data: unknown) => {
+      this.io.to(match.lobbyId).emit(event, data);
+    };
+    const optimized = createOptimizedEmitter(rawEmit);
+    match.emitterCleanup = optimized.cleanup;
+
     const ctx: MatchContext = {
       players: match.players,
-      emit: (event: string, data: unknown) => {
-        this.io.to(match.lobbyId).emit(event, data);
-      },
+      emit: optimized.emit,
       emitTo: (userId: string, event: string, data: unknown) => {
         const socketId = this.userSocketMap.getSocketId(userId);
         if (socketId) this.io.to(socketId).emit(event, data);
@@ -132,6 +140,10 @@ export class MatchManager {
   }
 
   private endRound(match: ActiveMatch, winnerId: string): void {
+    if (match.emitterCleanup) {
+      match.emitterCleanup();
+      match.emitterCleanup = null;
+    }
     if (match.currentGame) {
       match.currentGame.cleanup();
       match.currentGame = null;

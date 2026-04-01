@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 const BIRD_X = 80, BIRD_R = 12, PIPE_W = 40, GAP_H = 120;
 
@@ -19,7 +20,7 @@ export default function FlappyRaceGame() {
   const stateRef = useRef<FlappyState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: FlappyState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 interface Target { id: number; x: number; y: number; radius: number; }
 interface AimState {
@@ -18,7 +19,7 @@ export default function AimTrainerGame() {
   const stateRef = useRef<AimState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: AimState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 

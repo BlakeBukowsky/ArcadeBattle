@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { applyStateUpdate } from '../lib/net.js';
 
 const PLAYER_W = 30, PLAYER_H = 40, BALL_R = 12, NET_W = 6;
 
@@ -20,7 +21,7 @@ export default function VolleyballGame() {
   const stateRef = useRef<VolleyState | null>(null);
 
   useEffect(() => {
-    socket.on('game:state', (s: VolleyState) => { stateRef.current = s; });
+    socket.on('game:state', (data: unknown) => { stateRef.current = applyStateUpdate(stateRef.current, data); });
     return () => { socket.off('game:state'); };
   }, [socket]);
 
