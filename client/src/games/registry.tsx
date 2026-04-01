@@ -12,6 +12,7 @@ import ArrowSequenceGame from './ArrowSequenceGame.tsx';
 import RhythmGame from './RhythmGame.tsx';
 import TypingRaceGame from './TypingRaceGame.tsx';
 import MemoryArrowsGame from './MemoryArrowsGame.tsx';
+import TanksGame from './TanksGame.tsx';
 
 export const gameComponents: Record<string, ComponentType> = {
   'pong': PongGame,
@@ -27,4 +28,5 @@ export const gameComponents: Record<string, ComponentType> = {
   'rhythm': RhythmGame,
   'typing-race': TypingRaceGame,
   'memory-arrows': MemoryArrowsGame,
+  'tanks': TanksGame,
 };

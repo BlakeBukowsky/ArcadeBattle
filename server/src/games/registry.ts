@@ -13,6 +13,7 @@ import { arrowSequenceGame } from './arrow-sequence.js';
 import { rhythmGame } from './rhythm.js';
 import { typingRaceGame } from './typing-race.js';
 import { memoryArrowsGame } from './memory-arrows.js';
+import { tanksGame } from './tanks.js';
 
 class GameRegistry {
   private games = new Map<string, ServerGameModule>();
@@ -65,6 +66,7 @@ gameRegistry.register(arrowSequenceGame);
 gameRegistry.register(rhythmGame);
 gameRegistry.register(typingRaceGame);
 gameRegistry.register(memoryArrowsGame);
+gameRegistry.register(tanksGame);
 
 // Register game sets
 gameRegistry.registerSet({
