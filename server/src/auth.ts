@@ -4,7 +4,7 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { findUserByOAuth, createUserWithOAuth, findUserById, updateUser } from './db.js';
+import { findUserByOAuth, createUserWithOAuth, findUserById, updateUser, ensureUserExists } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AVATARS_DIR = path.join(__dirname, '..', 'data', 'avatars');
@@ -200,8 +200,9 @@ export function createAuthRouter(): Router {
     const payload = verifyToken(rawToken);
     if (!payload) { res.status(401).json({ error: 'Invalid token' }); return; }
 
-    const user = findUserById(payload.sub);
-    if (!user) { res.status(401).json({ error: 'User not found' }); return; }
+    // If DB was wiped (e.g., Railway redeploy), re-create the user stub
+    // so they don't get logged out. They'll just need to re-set their name/avatar.
+    const user = findUserById(payload.sub) ?? ensureUserExists(payload.sub, 'Player');
 
     // Auto-refresh: if token was issued more than 7 days ago, send a fresh one
     const decoded = jwt.decode(rawToken) as { iat?: number } | null;

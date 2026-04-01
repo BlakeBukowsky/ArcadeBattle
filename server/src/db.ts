@@ -86,6 +86,21 @@ export function findUserById(userId: string): DbUser | undefined {
   return getDb().prepare('SELECT * FROM users WHERE id = ?').get(userId) as DbUser | undefined;
 }
 
+/**
+ * Re-create a user with a known ID (e.g., after DB wipe).
+ * Used when a valid JWT references a user that no longer exists in the DB.
+ */
+export function ensureUserExists(userId: string, displayName: string): DbUser {
+  const existing = findUserById(userId);
+  if (existing) return existing;
+
+  getDb().prepare(`
+    INSERT INTO users (id, display_name) VALUES (?, ?)
+  `).run(userId, displayName);
+
+  return findUserById(userId)!;
+}
+
 export function updateUser(userId: string, displayName: string, avatarUrl: string | null): DbUser | undefined {
   getDb().prepare(`
     UPDATE users SET display_name = ?, avatar_url = ? WHERE id = ?

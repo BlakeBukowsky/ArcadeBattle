@@ -1,7 +1,7 @@
 import type { Socket } from 'socket.io';
 import { nanoid } from 'nanoid';
 import { verifyToken } from './auth.js';
-import { findUserById } from './db.js';
+import { findUserById, ensureUserExists } from './db.js';
 
 declare module 'socket.io' {
   interface SocketData {
@@ -25,10 +25,7 @@ export function authMiddleware(socket: Socket, next: (err?: Error) => void): voi
     if (!payload) {
       return next(new Error('Invalid token'));
     }
-    const user = findUserById(payload.sub);
-    if (!user) {
-      return next(new Error('User not found'));
-    }
+    const user = findUserById(payload.sub) ?? ensureUserExists(payload.sub, 'Player');
     socket.data.userId = user.id;
     socket.data.displayName = user.display_name;
     socket.data.avatarUrl = user.avatar_url ?? undefined;
