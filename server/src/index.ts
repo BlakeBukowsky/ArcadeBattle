@@ -173,7 +173,7 @@ matchManager.onMatchEnd = (lobbyId: string) => {
 // In production, serve the built client
 if (IS_PROD) {
   app.use(express.static(CLIENT_DIST));
-  app.get('*', (_req, res) => {
+  app.get('{*path}', (_req, res) => {
     res.sendFile(path.join(CLIENT_DIST, 'index.html'));
   });
 }
