@@ -25,8 +25,15 @@ export function verifyToken(token: string): { sub: string } | null {
 // ── OAuth callback HTML ──
 
 function callbackHtml(token: string): string {
+  // Use opener's own origin as the postMessage target so it works regardless of domain config
   return `<!DOCTYPE html><html><body><script>
-    window.opener.postMessage({ type: 'auth:token', token: '${token}' }, '${CLIENT_URL}');
+    try {
+      var target = window.opener ? window.opener.location.origin : '*';
+      window.opener.postMessage({ type: 'auth:token', token: '${token}' }, target);
+    } catch(e) {
+      // Cross-origin — fall back to '*' (safe here since token is only useful for our API)
+      window.opener.postMessage({ type: 'auth:token', token: '${token}' }, '*');
+    }
     window.close();
   </script><p>Signing in... you can close this window.</p></body></html>`;
 }

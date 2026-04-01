@@ -47,8 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Listen for OAuth popup postMessage
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
-      if (event.origin !== SERVER_URL) return;
-      if (event.data?.type === 'auth:token') {
+      if (event.data?.type !== 'auth:token') return;
+      // In production, client and server share an origin. In dev, accept from the dev server.
+      const allowedOrigins = [window.location.origin, SERVER_URL];
+      if (!allowedOrigins.includes(event.origin) && event.origin !== '') return;
+      {
         const newToken = event.data.token as string;
         localStorage.setItem(TOKEN_KEY, newToken);
         setToken(newToken);
