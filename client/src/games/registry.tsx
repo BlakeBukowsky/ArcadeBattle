@@ -26,6 +26,7 @@ import CityscapeGame from './CityscapeGame.tsx';
 import QuiltGame from './QuiltGame.tsx';
 import WordGuessGame from './WordGuessGame.tsx';
 import RoundsGame from './RoundsGame.tsx';
+import ControlPanelGame from './ControlPanelGame.tsx';
 
 export const gameComponents: Record<string, ComponentType> = {
   'pong': PongGame,
@@ -55,4 +56,5 @@ export const gameComponents: Record<string, ComponentType> = {
   'quilt': QuiltGame,
   'word-guess': WordGuessGame,
   'rounds': RoundsGame,
+  'control-panel': ControlPanelGame,
 };

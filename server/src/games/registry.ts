@@ -27,6 +27,7 @@ import { cityscapeGame } from './cityscape.js';
 import { quiltGame } from './quilt.js';
 import { wordGuessGame } from './word-guess.js';
 import { roundsGame } from './rounds.js';
+import { controlPanelGame } from './control-panel.js';
 
 class GameRegistry {
   private games = new Map<string, ServerGameModule>();
@@ -93,6 +94,7 @@ gameRegistry.register(cityscapeGame);
 gameRegistry.register(quiltGame);
 gameRegistry.register(wordGuessGame);
 gameRegistry.register(roundsGame);
+gameRegistry.register(controlPanelGame);
 
 // Register game sets
 gameRegistry.registerSet({
