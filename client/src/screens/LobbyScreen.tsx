@@ -109,7 +109,8 @@ export default function LobbyScreen() {
             {[
               { id: 'basic', name: 'Basic', desc: 'Simple, self-explanatory games — great for first-timers' },
               { id: 'standard', name: 'Standard', desc: 'The standard way to play — complicated and finicky games removed' },
-              { id: 'all', name: 'All Games', desc: 'All games' },
+              { id: 'all', name: 'All Games', desc: 'Every game including complex ones' },
+              { id: 'mouseless', name: 'Keyboard Only', desc: 'No mouse needed — all games playable with keyboard alone' },
             ].map((set) => (
               <button
                 key={set.id}

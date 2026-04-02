@@ -646,6 +646,106 @@
   color: #ff4488;
 }
 
+/* ── Feedback ── */
+
+.round-feedback {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.feedback-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 1px 4px;
+  opacity: 0.35;
+  transition: all 0.15s;
+}
+
+.feedback-btn:hover {
+  opacity: 0.8;
+}
+
+.feedback-btn.active {
+  opacity: 1;
+  border-color: #444;
+}
+
+.feedback-btn.active.up {
+  border-color: #00ff88;
+}
+
+.feedback-btn.active.down {
+  border-color: #ff4488;
+}
+
+.feedback-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.bug-report-toggle {
+  opacity: 0.5;
+  font-size: 0.8rem;
+}
+
+.bug-report-toggle:hover {
+  opacity: 1;
+}
+
+.bug-report-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bug-report-input {
+  width: 100%;
+  padding: 0.5rem;
+  background: #0a0a1a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+  outline: none;
+}
+
+.bug-report-input:focus {
+  border-color: #00ff88;
+}
+
+.bug-report-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.btn-submit-bug {
+  background: #00ff8833;
+  color: #00ff88;
+  border: 1px solid #00ff88;
+}
+
+.btn-submit-bug:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.bug-report-thanks {
+  color: #00ff88;
+  font-size: 0.85rem;
+}
+
 .game-over-actions {
   display: flex;
   gap: 1rem;

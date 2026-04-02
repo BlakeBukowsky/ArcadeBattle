@@ -7,6 +7,7 @@ import type { LobbyConfig } from '@arcade-battle/shared';
 import { RECONNECT_TIMEOUT_SECONDS } from '@arcade-battle/shared';
 import { initDatabase } from './db.js';
 import { createAuthRouter } from './auth.js';
+import { createFeedbackRouter } from './feedback.js';
 import { authMiddleware, UserSocketMap } from './middleware.js';
 import { LobbyManager } from './lobby.js';
 import { MatchManager } from './match.js';
@@ -35,6 +36,7 @@ app.use('/avatars', express.static(AVATARS_DIR, {
 }));
 
 app.use('/auth', createAuthRouter());
+app.use('/api/feedback', createFeedbackRouter());
 io.use(authMiddleware);
 
 const userSocketMap = new UserSocketMap();

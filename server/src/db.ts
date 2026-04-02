@@ -34,6 +34,22 @@ export function initDatabase(): Database.Database {
     );
 
     CREATE INDEX IF NOT EXISTS idx_oauth_user ON oauth_accounts(user_id);
+
+    CREATE TABLE IF NOT EXISTS feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL CHECK(type IN ('rating', 'bug_report')),
+      user_id TEXT NOT NULL,
+      game_id TEXT,
+      game_name TEXT,
+      round_number INTEGER,
+      rating INTEGER CHECK(rating IN (1, -1)),
+      message TEXT,
+      lobby_id TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(type);
+    CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
   `);
 
   return db;
