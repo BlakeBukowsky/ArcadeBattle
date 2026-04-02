@@ -121,3 +121,34 @@ gameRegistry.registerSet({
     'balance',
   ],
 });
+
+gameRegistry.registerSet({
+  id: 'standard',
+  name: 'Standard',
+  description: 'All straightforward games — skips bullet hells, complex platformers, and puzzles',
+  gameIds: [
+    // Basic games
+    'pong',
+    'aim-trainer',
+    'volleyball',
+    'asteroid-dodge',
+    'flappy-race',
+    'lane-racer',
+    'arrow-sequence',
+    'typing-race',
+    'memory-arrows',
+    'balance',
+    // Plus mid-complexity games
+    'joust',
+    'air-hockey',
+    'space-invaders',
+    'cowboy-shootout',
+    'rhythm',
+    'tanks',
+    'rounds',
+    'word-guess',
+    'control-panel',
+    'cityscape',
+    'spelunky',
+  ],
+});
