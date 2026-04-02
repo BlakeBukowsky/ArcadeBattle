@@ -5,8 +5,8 @@ const PW = 12, PH = 16;
 const GRAVITY = 0.4;
 const MOVE_SPEED = 3;
 const JUMP_POWER = -8;
-const CAVE_COLS = 20, CAVE_ROWS = 40;
 const TILE = 24;
+const CAVE_COLS = 25, CAVE_ROWS = 40;
 const CAVE_W = CAVE_COLS * TILE;
 const CAVE_H = CAVE_ROWS * TILE;
 const TICK_RATE = 1000 / 60;
@@ -14,99 +14,97 @@ const TICK_RATE = 1000 / 60;
 type Tile = 0 | 1 | 2 | 3; // air, solid, spike, exit
 
 function generateCave(): { grid: Tile[][]; exitR: number; exitC: number } {
+  // Start solid, then carve passable rooms connected by walkable tunnels
   const grid: Tile[][] = [];
-  for (let r = 0; r < CAVE_ROWS; r++) {
-    const row: Tile[] = [];
-    for (let c = 0; c < CAVE_COLS; c++) {
-      // Fill everything solid initially
-      row.push(1);
-    }
-    grid.push(row);
-  }
+  for (let r = 0; r < CAVE_ROWS; r++) grid.push(new Array(CAVE_COLS).fill(1) as Tile[]);
 
-  // Carve the cave using a room+tunnel approach
-  // Divide into sections of ~8 rows each
-  const SECTION_H = 8;
-  const numSections = Math.floor(CAVE_ROWS / SECTION_H);
-  let pathCol = 2 + Math.floor(Math.random() * (CAVE_COLS - 6));
-
-  // Starting room at top
-  for (let r = 0; r < 3; r++) {
+  // Carve starting room (top)
+  for (let r = 0; r < 4; r++)
     for (let c = 1; c < CAVE_COLS - 1; c++) grid[r][c] = 0;
-  }
 
-  for (let s = 0; s < numSections; s++) {
-    const baseR = s * SECTION_H + 3;
+  // Generate floors — each floor is a horizontal layer with rooms and connecting corridors
+  // A floor is ~6 rows tall, with a walkable corridor and a drop to the next
+  const FLOOR_H = 6;
+  const numFloors = Math.floor((CAVE_ROWS - 6) / FLOOR_H);
+  let prevDropC = Math.floor(CAVE_COLS / 2); // where the drop from the previous floor is
 
-    // Carve a room at the current path column
+  for (let f = 0; f < numFloors; f++) {
+    const baseR = 4 + f * FLOOR_H;
+
+    // Carve a 3-tall corridor across most of the width
+    const corridorR = baseR + 1;
+    for (let r = corridorR; r < Math.min(CAVE_ROWS, corridorR + 3); r++) {
+      for (let c = 1; c < CAVE_COLS - 1; c++) grid[r][c] = 0;
+    }
+
+    // Add a floor (solid row) at the bottom of the corridor
+    const floorR = Math.min(CAVE_ROWS - 1, corridorR + 3);
+    if (floorR < CAVE_ROWS) {
+      for (let c = 1; c < CAVE_COLS - 1; c++) grid[floorR][c] = 1;
+    }
+
+    // Carve a room somewhere on this floor
+    const roomC = 2 + Math.floor(Math.random() * (CAVE_COLS - 8));
     const roomW = 4 + Math.floor(Math.random() * 4);
-    const roomH = 3 + Math.floor(Math.random() * 2);
-    const roomC = Math.max(1, Math.min(CAVE_COLS - roomW - 1, pathCol - roomW / 2));
-    const roomR = Math.min(CAVE_ROWS - 2, baseR);
-
-    for (let r = roomR; r < Math.min(CAVE_ROWS - 1, roomR + roomH); r++) {
+    for (let r = corridorR - 1; r < Math.min(CAVE_ROWS, corridorR + 3); r++) {
       for (let c = roomC; c < Math.min(CAVE_COLS - 1, roomC + roomW); c++) {
         grid[r][c] = 0;
       }
     }
 
-    // Decide next path direction: sometimes go left, sometimes right, always eventually down
-    const nextPathCol = Math.max(2, Math.min(CAVE_COLS - 3, pathCol + Math.floor(Math.random() * 9) - 4));
-
-    // Carve horizontal tunnel from current room to next column
-    const tunnelR = Math.min(CAVE_ROWS - 2, roomR + roomH);
-    const startC = Math.min(pathCol, nextPathCol);
-    const endC = Math.max(pathCol, nextPathCol);
-    for (let c = Math.max(1, startC - 1); c <= Math.min(CAVE_COLS - 2, endC + 1); c++) {
-      grid[tunnelR][c] = 0;
-      if (tunnelR > 0) grid[tunnelR - 1][c] = 0; // 2-tall tunnel
-      if (tunnelR + 1 < CAVE_ROWS) grid[tunnelR + 1][c] = 0; // 3-tall for comfort
+    // Carve the drop from previous floor into this corridor
+    // Make a 3-wide hole in the ceiling connecting to the previous floor
+    for (let dc = -1; dc <= 1; dc++) {
+      const c = Math.max(1, Math.min(CAVE_COLS - 2, prevDropC + dc));
+      for (let r = Math.max(0, corridorR - 2); r <= corridorR; r++) {
+        grid[r][c] = 0;
+      }
     }
 
-    // Carve vertical shaft down to next section
-    const shaftC = nextPathCol;
-    const shaftEnd = Math.min(CAVE_ROWS - 1, tunnelR + SECTION_H - roomH);
-    for (let r = tunnelR; r <= shaftEnd; r++) {
-      grid[r][shaftC] = 0;
-      if (shaftC > 0) grid[r][shaftC - 1] = 0; // wide shaft
-      if (shaftC < CAVE_COLS - 1) grid[r][shaftC + 1] = 0;
+    // Choose where the drop to the NEXT floor will be
+    const nextDropC = 2 + Math.floor(Math.random() * (CAVE_COLS - 4));
+    // Carve the drop hole in the floor
+    for (let dc = -1; dc <= 1; dc++) {
+      const c = Math.max(1, Math.min(CAVE_COLS - 2, nextDropC + dc));
+      if (floorR < CAVE_ROWS) grid[floorR][c] = 0;
+      if (floorR + 1 < CAVE_ROWS) grid[floorR + 1][c] = 0;
     }
 
-    pathCol = nextPathCol;
+    // Add platforms inside the corridor for variety (small, jumpable)
+    if (Math.random() < 0.4) {
+      const platC = 3 + Math.floor(Math.random() * (CAVE_COLS - 6));
+      const platR = corridorR;
+      grid[platR][platC] = 1;
+      if (platC + 1 < CAVE_COLS - 1) grid[platR][platC + 1] = 1;
+    }
+
+    prevDropC = nextDropC;
   }
 
-  // Add platforms inside large open areas (so player can climb)
-  for (let r = 5; r < CAVE_ROWS - 3; r += 3) {
+  // Add spikes on some floor surfaces (not blocking the path)
+  for (let r = 5; r < CAVE_ROWS - 2; r++) {
     for (let c = 2; c < CAVE_COLS - 2; c++) {
-      if (grid[r][c] === 0 && grid[r + 1][c] === 0 && grid[r - 1][c] === 0) {
-        // Open space — maybe add a platform
-        if (Math.random() < 0.15) {
-          grid[r][c] = 1;
-          if (c + 1 < CAVE_COLS - 1 && grid[r][c + 1] === 0) grid[r][c + 1] = 1;
-        }
+      if (grid[r][c] === 0 && r + 1 < CAVE_ROWS && grid[r + 1][c] === 1) {
+        // Air above solid — candidate for spike
+        if (Math.random() < 0.06) grid[r][c] = 2;
       }
     }
   }
 
-  // Add spikes on some surfaces
-  for (let r = 3; r < CAVE_ROWS - 2; r++) {
-    for (let c = 2; c < CAVE_COLS - 2; c++) {
-      if (grid[r][c] === 0 && grid[r + 1][c] === 1 && Math.random() < 0.08) {
-        // Spike on floor
-        grid[r][c] = 2;
-      }
-    }
-  }
-
-  // Place exit at bottom — find an air tile near pathCol
-  let exitR = CAVE_ROWS - 3, exitC = pathCol;
-  for (let r = CAVE_ROWS - 3; r > CAVE_ROWS - 8; r--) {
-    if (grid[r][pathCol] === 0) { exitR = r; break; }
-  }
+  // Place exit on the last floor
+  const lastFloorBase = 4 + (numFloors - 1) * FLOOR_H;
+  const exitR = Math.min(CAVE_ROWS - 2, lastFloorBase + 2);
+  const exitC = prevDropC;
   grid[exitR][exitC] = 3;
-  // Ensure air around exit
-  if (exitR > 0) grid[exitR - 1][exitC] = 0;
-  if (exitR + 1 < CAVE_ROWS) grid[exitR + 1][exitC] = 0;
+  // Clear around exit
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const r = exitR + dr, c = exitC + dc;
+      if (r >= 0 && r < CAVE_ROWS && c >= 0 && c < CAVE_COLS && grid[r][c] !== 3) {
+        grid[r][c] = 0;
+      }
+    }
+  }
 
   return { grid, exitR, exitC };
 }
@@ -131,7 +129,7 @@ export const spelunkyGame: ServerGameModule = {
     id: 'spelunky',
     name: 'Cave Dive',
     description: 'Spelunky-style cave race',
-    controls: 'A/D to move, W/Space to jump. Navigate the cave, avoid spikes, reach the exit first.',
+    controls: 'A/D to move, W/Space to jump. Navigate rooms and corridors, avoid spikes, reach the exit first.',
     maxDuration: 120,
   },
 
@@ -149,12 +147,9 @@ export const spelunkyGame: ServerGameModule = {
         [p1]: { x: CAVE_W / 2 - PW / 2, y: TILE + 4, vx: 0, vy: 0, grounded: false, alive: true, completed: false, cameraX: 0, cameraY: 0 },
         [p2]: { x: CAVE_W / 2 - PW / 2, y: TILE + 4, vx: 0, vy: 0, grounded: false, alive: true, completed: false, cameraX: 0, cameraY: 0 },
       },
-      grid,
-      tileSize: TILE,
-      caveWidth: CAVE_W,
-      caveHeight: CAVE_H,
-      canvasWidth: W,
-      canvasHeight: H,
+      grid, tileSize: TILE,
+      caveWidth: CAVE_W, caveHeight: CAVE_H,
+      canvasWidth: W, canvasHeight: H,
       winner: null,
     };
 
@@ -166,74 +161,48 @@ export const spelunkyGame: ServerGameModule = {
     function resolveCollisions(p: PlayerState): void {
       p.grounded = false;
 
-      // Vertical
+      // Vertical — check feet/head
       if (p.vy > 0) {
         const footRow = Math.floor((p.y + PH) / TILE);
-        const left = Math.floor(p.x / TILE);
-        const right = Math.floor((p.x + PW - 1) / TILE);
-        for (let c = left; c <= right; c++) {
-          const t = getTile(footRow, c);
-          if (t === 1) {
-            p.y = footRow * TILE - PH;
-            p.vy = 0;
-            p.grounded = true;
-            break;
-          }
+        for (let c = Math.floor(p.x / TILE); c <= Math.floor((p.x + PW - 1) / TILE); c++) {
+          if (getTile(footRow, c) === 1) { p.y = footRow * TILE - PH; p.vy = 0; p.grounded = true; break; }
         }
       } else if (p.vy < 0) {
         const headRow = Math.floor(p.y / TILE);
-        const left = Math.floor(p.x / TILE);
-        const right = Math.floor((p.x + PW - 1) / TILE);
-        for (let c = left; c <= right; c++) {
-          if (getTile(headRow, c) === 1) {
-            p.y = (headRow + 1) * TILE;
-            p.vy = 0;
-            break;
-          }
+        for (let c = Math.floor(p.x / TILE); c <= Math.floor((p.x + PW - 1) / TILE); c++) {
+          if (getTile(headRow, c) === 1) { p.y = (headRow + 1) * TILE; p.vy = 0; break; }
         }
       }
 
       // Horizontal
-      const top = Math.floor(p.y / TILE);
-      const bottom = Math.floor((p.y + PH - 1) / TILE);
       if (p.vx < 0) {
         const leftCol = Math.floor(p.x / TILE);
-        for (let r = top; r <= bottom; r++) {
+        for (let r = Math.floor(p.y / TILE); r <= Math.floor((p.y + PH - 1) / TILE); r++) {
           if (getTile(r, leftCol) === 1) { p.x = (leftCol + 1) * TILE; p.vx = 0; break; }
         }
       } else if (p.vx > 0) {
         const rightCol = Math.floor((p.x + PW - 1) / TILE);
-        for (let r = top; r <= bottom; r++) {
+        for (let r = Math.floor(p.y / TILE); r <= Math.floor((p.y + PH - 1) / TILE); r++) {
           if (getTile(r, rightCol) === 1) { p.x = rightCol * TILE - PW; p.vx = 0; break; }
         }
       }
     }
 
     function checkHazards(p: PlayerState, pid: string): boolean {
-      const left = Math.floor(p.x / TILE);
-      const right = Math.floor((p.x + PW - 1) / TILE);
-      const top = Math.floor(p.y / TILE);
-      const bottom = Math.floor((p.y + PH - 1) / TILE);
-
-      for (let r = top; r <= bottom; r++) {
-        for (let c = left; c <= right; c++) {
+      for (let r = Math.floor(p.y / TILE); r <= Math.floor((p.y + PH - 1) / TILE); r++) {
+        for (let c = Math.floor(p.x / TILE); c <= Math.floor((p.x + PW - 1) / TILE); c++) {
           const t = getTile(r, c);
           if (t === 2) {
             p.alive = false;
-            const opponent = pid === p1 ? p2 : p1;
             running = false;
-            state.winner = opponent;
-            ctx.emit('game:state', state);
-            ctx.endRound(opponent);
-            return true;
+            state.winner = pid === p1 ? p2 : p1;
+            ctx.emit('game:state', state); ctx.endRound(state.winner); return true;
           }
           if (t === 3) {
             p.completed = true;
             running = false;
             state.winner = pid;
-            ctx.emit('game:state', state);
-            ctx.endRound(pid);
-            return true;
+            ctx.emit('game:state', state); ctx.endRound(pid); return true;
           }
         }
       }
@@ -252,20 +221,19 @@ export const spelunkyGame: ServerGameModule = {
         else if (inp.right) p.vx = MOVE_SPEED;
         else p.vx *= 0.7;
 
-        if (inp.jump && p.grounded) { p.vy = JUMP_POWER; p.grounded = false; inp.jump = false; }
+        if (inp.jump) { if (p.grounded) { p.vy = JUMP_POWER; p.grounded = false; } inp.jump = false; }
         p.vy += GRAVITY;
         p.x += p.vx; p.y += p.vy;
-
         p.x = Math.max(TILE, Math.min(CAVE_W - TILE - PW, p.x));
 
         resolveCollisions(p);
         if (checkHazards(p, pid)) return;
 
-        // Camera — follow player, centered
-        const targetCamX = p.x - HALF_W / 2;
-        const targetCamY = p.y - H * 0.4;
-        p.cameraX += (Math.max(0, Math.min(CAVE_W - HALF_W, targetCamX)) - p.cameraX) * 0.1;
-        p.cameraY += (Math.max(0, Math.min(CAVE_H - H, targetCamY)) - p.cameraY) * 0.1;
+        // Camera
+        const tcx = p.x - HALF_W / 2;
+        const tcy = p.y - H * 0.4;
+        p.cameraX += (Math.max(0, Math.min(CAVE_W - HALF_W, tcx)) - p.cameraX) * 0.1;
+        p.cameraY += (Math.max(0, Math.min(CAVE_H - H, tcy)) - p.cameraY) * 0.1;
       }
 
       ctx.emit('game:state', state);

@@ -158,7 +158,7 @@ export const roundsGame: ServerGameModule = {
         else if (inp.right) { p.vx = MOVE_SPEED; p.facing = 1; }
         else p.vx *= 0.75;
 
-        if (inp.jump && p.grounded) { p.vy = JUMP_POWER; p.grounded = false; inp.jump = false; }
+        if (inp.jump) { if (p.grounded) { p.vy = JUMP_POWER; p.grounded = false; } inp.jump = false; }
         p.vy += GRAVITY;
         p.x += p.vx; p.y += p.vy;
 

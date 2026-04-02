@@ -16,7 +16,8 @@ import { memoryArrowsGame } from './memory-arrows.js';
 import { tanksGame } from './tanks.js';
 import { laneRacerGame } from './lane-racer.js';
 import { asteroidsGame } from './asteroids.js';
-import { mountainClimberGame } from './mountain-climber.js';
+// mountain-climber removed
+// import { mountainClimberGame } from './mountain-climber.js';
 // ninja removed for rework
 // import { ninjaGame } from './ninja.js';
 import { bossBattleGame } from './boss-battle.js';
@@ -85,7 +86,7 @@ gameRegistry.register(memoryArrowsGame);
 gameRegistry.register(tanksGame);
 gameRegistry.register(laneRacerGame);
 gameRegistry.register(asteroidsGame);
-gameRegistry.register(mountainClimberGame);
+// gameRegistry.register(mountainClimberGame);
 // gameRegistry.register(ninjaGame);
 gameRegistry.register(bossBattleGame);
 gameRegistry.register(spaceBossGame);
@@ -172,7 +173,6 @@ gameRegistry.registerSet({
     'tanks',
     'lane-racer',
     'asteroids',
-    'mountain-climber',
     'boss-battle',
     'space-boss',
     'spelunky',
