@@ -1,6 +1,7 @@
 import type { ServerGameModule, MatchContext, GameInstance } from '@arcade-battle/shared';
 
 const SENTENCE_COUNT = 3;
+const STUN_DURATION = 1500; // ms freeze on wrong input
 const TICK_RATE = 1000 / 15;
 
 const SENTENCES = [
@@ -31,6 +32,7 @@ interface PlayerState {
   inputIndex: number;
   completed: boolean;
   lastCorrect: boolean;
+  stunUntil: number; // timestamp when stun ends
 }
 
 interface TypingRaceState {
@@ -59,8 +61,8 @@ export const typingRaceGame: ServerGameModule = {
 
     const state: TypingRaceState = {
       players: {
-        [p1]: { currentSentence: 0, inputIndex: 0, completed: false, lastCorrect: true },
-        [p2]: { currentSentence: 0, inputIndex: 0, completed: false, lastCorrect: true },
+        [p1]: { currentSentence: 0, inputIndex: 0, completed: false, lastCorrect: true, stunUntil: 0 },
+        [p2]: { currentSentence: 0, inputIndex: 0, completed: false, lastCorrect: true, stunUntil: 0 },
       },
       sentences,
       canvasWidth: 800,
@@ -81,6 +83,9 @@ export const typingRaceGame: ServerGameModule = {
 
         const p = state.players[playerId];
         if (!p || p.completed) return;
+
+        // Stunned — ignore input
+        if (Date.now() < p.stunUntil) return;
 
         const currentSentence = state.sentences[p.currentSentence];
         const expected = currentSentence[p.inputIndex];
@@ -104,8 +109,9 @@ export const typingRaceGame: ServerGameModule = {
             }
           }
         } else {
-          p.inputIndex = 0;
+          // Wrong — stun instead of reset
           p.lastCorrect = false;
+          p.stunUntil = Date.now() + STUN_DURATION;
         }
 
         ctx.emit('game:state', state);

@@ -2,10 +2,10 @@ import type { ServerGameModule, MatchContext, GameInstance } from '@arcade-battl
 
 const W = 800, H = 500;
 const GAME_DURATION = 30000;
-const WINDOW_ROWS = 2, WINDOW_COLS = 4;
-const WINDOW_W = 50, WINDOW_H = 55;
-const WINDOW_Y_START = 50;
-const WINDOW_ROW_GAP = 90;
+const WINDOW_ROWS = 3, WINDOW_COLS = 4;
+const WINDOW_W = 45, WINDOW_H = 45;
+const WINDOW_Y_START = 35;
+const WINDOW_ROW_GAP = 70;
 const WINDOW_MARGIN = 80;
 const BANDIT_PEEK_MIN = 2000, BANDIT_PEEK_MAX = 4000;
 const BANDIT_VISIBLE_MIN = 1500, BANDIT_VISIBLE_MAX = 3000;

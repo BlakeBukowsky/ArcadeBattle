@@ -3,7 +3,7 @@ import type { ServerGameModule, MatchContext, GameInstance } from '@arcade-battl
 const W = 800, H = 500;
 const PUCK_R = 12;
 const MALLET_R = 20;
-const GOAL_WIDTH = 260;
+const GOAL_WIDTH = 200;
 const GOAL_TOP = (H - GOAL_WIDTH) / 2;
 const GOAL_BOTTOM = GOAL_TOP + GOAL_WIDTH;
 const PUCK_FRICTION = 0.995;

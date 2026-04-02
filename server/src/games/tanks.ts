@@ -20,13 +20,21 @@ const WALLS: Wall[] = [
   { x: 0, y: 0, w: 8, h: H },
   { x: W - 8, y: 0, w: 8, h: H },
   // Center pillars
-  { x: W / 2 - 6, y: 160, w: 12, h: 80 },
-  { x: W / 2 - 6, y: H - 240, w: 12, h: 80 },
+  { x: W / 2 - 6, y: 140, w: 12, h: 90 },
+  { x: W / 2 - 6, y: H - 230, w: 12, h: 90 },
+  // Horizontal center bars
+  { x: 260, y: H / 2 - 6, w: 90, h: 12 },
+  { x: W - 350, y: H / 2 - 6, w: 90, h: 12 },
   // Corner blocks
   { x: 100, y: 100, w: 50, h: 35 },
   { x: W - 150, y: 100, w: 50, h: 35 },
   { x: 100, y: H - 135, w: 50, h: 35 },
   { x: W - 150, y: H - 135, w: 50, h: 35 },
+  // Mid-lane cover
+  { x: 200, y: 190, w: 30, h: 30 },
+  { x: W - 230, y: 190, w: 30, h: 30 },
+  { x: 200, y: H - 220, w: 30, h: 30 },
+  { x: W - 230, y: H - 220, w: 30, h: 30 },
 ];
 
 interface Bullet {

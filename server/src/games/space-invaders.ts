@@ -8,13 +8,13 @@ const MOVE_SPEED = 4;
 const BULLET_SPEED = 7;
 const BULLET_W = 3, BULLET_H = 10;
 const INVADER_W = 22, INVADER_H = 16;
-const INVADER_COLS = 6, INVADER_ROWS = 3;
+const INVADER_COLS = 8, INVADER_ROWS = 4;
 const INVADER_SPACING_X = 36, INVADER_SPACING_Y = 28;
 const INVADER_MOVE_SPEED = 0.8;
 const INVADER_DROP = 12;
 const INVADER_SHOOT_CHANCE = 0.0008;
 const INVADER_BULLET_SPEED = 3;
-const FIRE_COOLDOWN = 250;
+const FIRE_COOLDOWN = 400;
 const TICK_RATE = 1000 / 60;
 
 interface Invader { col: number; row: number; alive: boolean; }

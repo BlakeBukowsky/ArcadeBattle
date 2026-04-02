@@ -3,8 +3,8 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
-const WINDOW_W = 50, WINDOW_H = 55;
-const WINDOW_Y_START = 50, WINDOW_ROW_GAP = 90;
+const WINDOW_W = 45, WINDOW_H = 45;
+const WINDOW_Y_START = 35, WINDOW_ROW_GAP = 70;
 const WINDOW_COLS = 4, WINDOW_MARGIN = 80;
 const PLAYER_W = 30, PLAYER_H = 50, PLAYER_Y = 430;
 const COVER_W = 50, COVER_H = 55, COVER_Y = 435;

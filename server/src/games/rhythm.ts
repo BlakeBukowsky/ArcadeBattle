@@ -7,10 +7,10 @@ type Direction = typeof DIRECTIONS[number];
 const HIT_ZONE_Y = H - 80;
 const HIT_WINDOW = 40; // pixels above/below hit zone to count as a hit
 const BASE_SPEED = 2.5;
-const SPEED_INCREASE = 0.002; // per tick
+const SPEED_INCREASE = 0.0005; // per tick — slow speed ramp
 const SPAWN_INTERVAL_START = 60; // ticks between spawns
-const SPAWN_INTERVAL_MIN = 20;
-const SPAWN_INTERVAL_DECREASE = 0.03;
+const SPAWN_INTERVAL_MIN = 14; // arrows get much denser
+const SPAWN_INTERVAL_DECREASE = 0.04; // density ramps faster than speed
 const MAX_MISSES = 3;
 const TICK_RATE = 1000 / 60;
 
