@@ -3,19 +3,22 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
-const WINDOW_W = 45, WINDOW_H = 45;
-const WINDOW_Y_START = 35, WINDOW_ROW_GAP = 70;
+const WINDOW_W = 50, WINDOW_H = 50;
+const WINDOW_Y_START = 40, WINDOW_ROW_GAP = 70;
 const WINDOW_COLS = 4, WINDOW_MARGIN = 80;
-const PLAYER_W = 30, PLAYER_H = 50, PLAYER_Y = 430;
-const COVER_W = 50, COVER_H = 55, COVER_Y = 435;
+const PLAYER_W = 28, PLAYER_H = 45, PLAYER_Y = 435;
+const COVER_W = 45, COVER_H = 50;
 
-interface Bandit { id: number; col: number; row: number; visible: boolean; windingUp: boolean; }
+interface Bandit { windowRow: number; windowCol: number; alive: boolean; peeking: boolean; shooting: boolean; }
 interface Projectile { x: number; y: number; vx: number; vy: number; fromBandit: boolean; }
-interface PlayerState { peeking: boolean; cursorX: number; cursorY: number; kills: number; stunned: boolean; baseX: number; }
+interface PlayerState { peeking: boolean; cursorX: number; cursorY: number; kills: number; lives: number; alive: boolean; baseX: number; }
 interface CowboyState {
   players: Record<string, PlayerState>;
-  bandits: Bandit[]; projectiles: Projectile[];
-  timeRemaining: number; canvasWidth: number; canvasHeight: number; winner: string | null;
+  bandit: Bandit;
+  banditsRemaining: number;
+  projectiles: Projectile[];
+  canvasWidth: number; canvasHeight: number; winner: string | null;
+  windows: { row: number; col: number }[];
 }
 
 function windowCenterX(col: number): number {
@@ -40,7 +43,7 @@ export default function CowboyShootoutGame() {
     function onMove(e: MouseEvent) {
       const now = Date.now(); if (now - last < 33) return; last = now;
       const rect = canvas!.getBoundingClientRect();
-      const state = interpRef.interpolate(); if (!state) return;
+      const state = interpRef.latest(); if (!state) return;
       socket.emit('game:input', {
         x: (e.clientX - rect.left) * (state.canvasWidth / rect.width),
         y: (e.clientY - rect.top) * (state.canvasHeight / rect.height),
@@ -71,27 +74,30 @@ export default function CowboyShootoutGame() {
       const W = state.canvasWidth, H = state.canvasHeight;
       canvas.width = W; canvas.height = H;
 
+      // Building
       drawBackground(c, 'cowboy-shootout', W, H, { color: '#3a2a1a' });
-      // Sky
-      drawSprite(c, 'cover', 0, 0, W, 35, { color: '#1a1a3e' });
+      drawSprite(c, 'cover', 0, 0, W, 35, { color: '#1a1a3e' }); // sky
 
-      // Windows
-      for (const bandit of state.bandits) {
-        const wx = windowCenterX(bandit.col) - WINDOW_W / 2;
-        const wy = WINDOW_Y_START + bandit.row * WINDOW_ROW_GAP;
-
+      // All windows
+      for (const w of state.windows) {
+        const wx = windowCenterX(w.col) - WINDOW_W / 2;
+        const wy = WINDOW_Y_START + w.row * WINDOW_ROW_GAP;
         drawSprite(c, 'cover', wx - 4, wy - 4, WINDOW_W + 8, WINDOW_H + 8, { color: '#222' });
         drawSprite(c, 'cover', wx, wy, WINDOW_W, WINDOW_H, { color: '#0a0a1a' });
+      }
 
-        if (bandit.visible) {
-          drawSprite(c, 'bandit', wx + 10, wy + 12, WINDOW_W - 20, WINDOW_H - 18, {
-            color: bandit.windingUp ? '#ff4444' : '#cc8844',
-          });
-          drawSprite(c, 'bandit', wx + 6, wy + 6, WINDOW_W - 12, 10, { color: '#442200' }); // hat
-          if (bandit.windingUp) {
-            c.strokeStyle = '#ff0000'; c.lineWidth = 2;
-            c.strokeRect(wx - 2, wy - 2, WINDOW_W + 4, WINDOW_H + 4);
-          }
+      // Bandit
+      const b = state.bandit;
+      if (b.alive && b.peeking) {
+        const bwx = windowCenterX(b.windowCol) - WINDOW_W / 2;
+        const bwy = WINDOW_Y_START + b.windowRow * WINDOW_ROW_GAP;
+        drawSprite(c, 'bandit', bwx + 10, bwy + 10, WINDOW_W - 20, WINDOW_H - 15, {
+          color: b.shooting ? '#ff4444' : '#cc8844',
+        });
+        drawSprite(c, 'bandit', bwx + 6, bwy + 5, WINDOW_W - 12, 10, { color: '#442200' }); // hat
+        if (b.shooting) {
+          c.strokeStyle = '#ff0000'; c.lineWidth = 2;
+          c.strokeRect(bwx - 2, bwy - 2, WINDOW_W + 4, WINDOW_H + 4);
         }
       }
 
@@ -105,21 +111,26 @@ export default function CowboyShootoutGame() {
         const isMe = pid === myId;
         const color = isMe ? '#00ff88' : '#ff4488';
 
-        drawSprite(c, 'cover', p.baseX - 5, COVER_Y, COVER_W, COVER_H, { color: '#6a5a3a' });
-        drawSprite(c, 'cover', p.baseX - 5, COVER_Y, COVER_W, 4, { color: '#7a6a4a' });
+        // Cover block
+        drawSprite(c, 'cover', p.baseX - 5, PLAYER_Y, COVER_W, COVER_H, { color: '#6a5a3a' });
+        drawSprite(c, 'cover', p.baseX - 5, PLAYER_Y, COVER_W, 4, { color: '#7a6a4a' });
 
-        if (p.peeking) {
+        if (p.peeking && p.alive) {
           drawSprite(c, isMe ? 'player' : 'opponent', p.baseX + COVER_W - 10, PLAYER_Y - 10, 20, PLAYER_H, { color, skin: pid });
-          drawSprite(c, 'bullet', p.baseX + COVER_W + 5, PLAYER_Y, 15, 4, { color: '#aaa' }); // gun
+          drawSprite(c, 'bullet', p.baseX + COVER_W + 5, PLAYER_Y, 15, 4, { color: '#aaa' });
         }
 
-        if (p.stunned) {
-          c.fillStyle = '#ff000033';
-          c.beginPath(); c.arc(p.baseX + PLAYER_W / 2, PLAYER_Y + PLAYER_H / 2, 30, 0, Math.PI * 2); c.fill();
-          drawLabel(c, 'STUNNED', p.baseX + PLAYER_W / 2, PLAYER_Y - 20, { color: '#ff4444', font: '12px monospace' });
+        if (!p.alive) {
+          drawLabel(c, 'DEAD', p.baseX + PLAYER_W / 2, PLAYER_Y - 20, { color: '#ff4444', font: '12px monospace' });
         }
 
-        drawLabel(c, `${isMe ? 'You' : 'Opp'}: ${p.kills}`, p.baseX + PLAYER_W / 2, H - 8, { color, font: '14px monospace' });
+        // Lives
+        let livesStr = '';
+        for (let i = 0; i < 3; i++) livesStr += i < p.lives ? '\u2665 ' : 'X ';
+        drawLabel(c, livesStr.trim(), p.baseX + PLAYER_W / 2, H - 8, { color: p.lives <= 1 ? '#ff4444' : '#ff8888', font: '14px monospace' });
+
+        // Kills
+        drawLabel(c, `${isMe ? 'You' : 'Opp'}: ${p.kills}`, p.baseX + PLAYER_W / 2, H - 24, { color, font: '12px monospace' });
       });
 
       // Projectiles
@@ -129,41 +140,40 @@ export default function CowboyShootoutGame() {
         c.strokeStyle = proj.fromBandit ? '#ff664444' : '#ffff0044'; c.lineWidth = 2; c.stroke();
       }
 
-      // Crosshairs — both players
-      const allPids = Object.keys(state.players);
-      for (const pid of allPids) {
+      // Both players' crosshairs
+      pids.forEach((pid) => {
         const p = state.players[pid];
-        if (!p.peeking || p.stunned) continue;
+        if (!p.peeking || !p.alive) return;
         const isMe = pid === myId;
-        const cursorColor = isMe ? '#ff000088' : '#ff448866';
-        const size = isMe ? 12 : 8;
-        c.strokeStyle = cursorColor; c.lineWidth = isMe ? 1 : 1;
+        const sz = isMe ? 12 : 8;
+        c.strokeStyle = isMe ? '#ff000088' : '#ff448866'; c.lineWidth = 1;
         c.beginPath();
-        c.moveTo(p.cursorX - size, p.cursorY); c.lineTo(p.cursorX + size, p.cursorY);
-        c.moveTo(p.cursorX, p.cursorY - size); c.lineTo(p.cursorX, p.cursorY + size);
+        c.moveTo(p.cursorX - sz, p.cursorY); c.lineTo(p.cursorX + sz, p.cursorY);
+        c.moveTo(p.cursorX, p.cursorY - sz); c.lineTo(p.cursorX, p.cursorY + sz);
         c.stroke();
         c.beginPath(); c.arc(p.cursorX, p.cursorY, isMe ? 7 : 5, 0, Math.PI * 2); c.stroke();
-      }
-
-      // Timer
-      drawLabel(c, `${state.timeRemaining.toFixed(0)}s`, W / 2, 25, {
-        color: state.timeRemaining < 10 ? '#ff4444' : '#ffffff', font: '24px monospace',
       });
 
-      // Divider
-      c.strokeStyle = '#555'; c.lineWidth = 2;
-      c.beginPath(); c.moveTo(W / 2, PLAYER_Y - 10); c.lineTo(W / 2, H); c.stroke();
+      // HUD
+      drawLabel(c, `Bandits: ${state.banditsRemaining}`, W / 2, 25, { color: '#ffaa00', font: '16px monospace' });
+
+      if (state.winner) {
+        c.fillStyle = '#000000aa'; c.fillRect(0, H / 2 - 30, W, 60);
+        drawLabel(c, state.winner === myId ? 'YOU WIN!' : 'YOU LOSE!', W / 2, H / 2 + 8, {
+          color: state.winner === myId ? '#00ff88' : '#ff4488', font: '28px monospace',
+        });
+      }
 
       animId = requestAnimationFrame(draw);
     }
     animId = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animId);
-  }, [socket, myId]);
+  }, [socket, myId, interpRef]);
 
   return (
     <div className="game-container">
       <canvas ref={canvasRef} className="game-canvas" style={{ cursor: 'crosshair' }} />
-      <p className="controls-hint">Right-click to peek from cover, Left-click to shoot</p>
+      <p className="controls-hint">Right-click to peek, Left-click to shoot — kill all 7 bandits!</p>
     </div>
   );
 }

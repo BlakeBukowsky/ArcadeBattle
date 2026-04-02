@@ -1,41 +1,40 @@
 import type { ServerGameModule, MatchContext, GameInstance } from '@arcade-battle/shared';
 
 const W = 800, H = 500;
-const GAME_DURATION = 30000;
 const WINDOW_ROWS = 3, WINDOW_COLS = 4;
-const WINDOW_W = 45, WINDOW_H = 45;
-const WINDOW_Y_START = 35;
+const WINDOW_W = 50, WINDOW_H = 50;
+const WINDOW_Y_START = 40;
 const WINDOW_ROW_GAP = 70;
 const WINDOW_MARGIN = 80;
-const BANDIT_PEEK_MIN = 1500, BANDIT_PEEK_MAX = 3000;
-const BANDIT_VISIBLE_MIN = 1200, BANDIT_VISIBLE_MAX = 2500;
-const BANDIT_SHOOT_WINDUP = 600;
-const STUN_DURATION = 3000;
-const SHOOT_COOLDOWN = 350;
-const BULLET_SPEED = 6;
+const TOTAL_BANDITS = 7; // odd number
+const BANDIT_HIDE_MIN = 1500, BANDIT_HIDE_MAX = 3000;
+const BANDIT_PEEK_DURATION = 1200;
+const BANDIT_SHOOT_DELAY = 800; // ms after peek before bandit shoots
+const PLAYER_LIVES = 3;
+const PLAYER_SHOOT_COOLDOWN = 600;
+const BULLET_SPEED = 8;
 const TICK_RATE = 1000 / 30;
 
-// Players stand at bottom, side by side
+// Players at bottom
 const P1_X = W / 2 - 80, P2_X = W / 2 + 40;
-const PLAYER_Y = H - 70;
-const PLAYER_W = 30, PLAYER_H = 50;
-const COVER_Y = H - 65, COVER_H = 55;
+const PLAYER_Y = H - 65;
+const PLAYER_W = 28, PLAYER_H = 45;
 
 interface Bandit {
-  id: number;
-  col: number;
-  row: number;
-  visible: boolean;
-  nextToggle: number;
-  windingUp: boolean;
-  shootTime: number;
-  targetPlayer: string | null;
+  windowRow: number;
+  windowCol: number;
+  alive: boolean;
+  peeking: boolean;
+  peekStart: number;
+  nextAction: number; // timestamp for next hide/peek
+  shooting: boolean;
 }
 
 interface Projectile {
   x: number; y: number;
   vx: number; vy: number;
   fromBandit: boolean;
+  owner?: string; // player who fired (for kill credit)
   targetPlayer?: string;
 }
 
@@ -44,25 +43,21 @@ interface PlayerState {
   cursorX: number;
   cursorY: number;
   kills: number;
-  stunned: boolean;
-  stunEnd: number;
+  lives: number;
+  alive: boolean;
   lastShot: number;
   baseX: number;
 }
 
 interface CowboyState {
   players: { [id: string]: PlayerState };
-  bandits: Bandit[];
+  bandit: Bandit;
+  banditsRemaining: number;
   projectiles: Projectile[];
-  timeRemaining: number;
   canvasWidth: number;
   canvasHeight: number;
   winner: string | null;
-}
-
-function windowX(col: number): number {
-  const totalW = (WINDOW_COLS - 1) * ((W - WINDOW_MARGIN * 2) / (WINDOW_COLS - 1));
-  return WINDOW_MARGIN + col * ((W - WINDOW_MARGIN * 2) / (WINDOW_COLS - 1)) - WINDOW_W / 2 + WINDOW_W / 2;
+  windows: { row: number; col: number }[];
 }
 
 function windowCenterX(col: number): number {
@@ -77,122 +72,142 @@ export const cowboyShootoutGame: ServerGameModule = {
   info: {
     id: 'cowboy-shootout',
     name: 'Cowboy Shootout',
-    description: 'Western shootout against bandits',
-    controls: 'Right Click to peek, Left Click to shoot, Mouse to aim. Most kills in 30s wins. Getting shot stuns for 3s.',
-    maxDuration: 35,
+    description: 'Western shootout — take down bandits!',
+    controls: 'Right Click to peek from cover. Left Click to shoot (cooldown). Mouse to aim. 3 lives. Kill all bandits first!',
+    maxDuration: 90,
   },
 
   create(ctx: MatchContext): GameInstance {
     const [p1, p2] = ctx.players;
     let running = true;
-    const startTime = Date.now();
+    let banditsKilledTotal = 0;
 
-    const bandits: Bandit[] = [];
-    let banditId = 0;
-    for (let row = 0; row < WINDOW_ROWS; row++) {
-      for (let col = 0; col < WINDOW_COLS; col++) {
-        bandits.push({
-          id: banditId++,
-          col, row,
-          visible: false,
-          nextToggle: Date.now() + 500 + Math.random() * BANDIT_PEEK_MAX,
-          windingUp: false,
-          shootTime: 0,
-          targetPlayer: null,
-        });
+    // Generate all window positions
+    const windows: { row: number; col: number }[] = [];
+    for (let r = 0; r < WINDOW_ROWS; r++) {
+      for (let c = 0; c < WINDOW_COLS; c++) {
+        windows.push({ row: r, col: c });
       }
     }
 
+    function randomWindow(): { row: number; col: number } {
+      return windows[Math.floor(Math.random() * windows.length)];
+    }
+
+    const startWindow = randomWindow();
+    const now = Date.now();
+
     const state: CowboyState = {
       players: {
-        [p1]: { peeking: false, cursorX: W / 2, cursorY: H / 2, kills: 0, stunned: false, stunEnd: 0, lastShot: 0, baseX: P1_X },
-        [p2]: { peeking: false, cursorX: W / 2, cursorY: H / 2, kills: 0, stunned: false, stunEnd: 0, lastShot: 0, baseX: P2_X },
+        [p1]: { peeking: false, cursorX: W / 2, cursorY: H / 2, kills: 0, lives: PLAYER_LIVES, alive: true, lastShot: 0, baseX: P1_X },
+        [p2]: { peeking: false, cursorX: W / 2, cursorY: H / 2, kills: 0, lives: PLAYER_LIVES, alive: true, lastShot: 0, baseX: P2_X },
       },
-      bandits,
+      bandit: {
+        windowRow: startWindow.row, windowCol: startWindow.col,
+        alive: true, peeking: false, peekStart: 0, shooting: false,
+        nextAction: now + 1000 + Math.random() * 1000,
+      },
+      banditsRemaining: TOTAL_BANDITS,
       projectiles: [],
-      timeRemaining: GAME_DURATION / 1000,
-      canvasWidth: W,
-      canvasHeight: H,
+      canvasWidth: W, canvasHeight: H,
       winner: null,
+      windows,
     };
+
+    function spawnNextBandit(): void {
+      if (banditsKilledTotal >= TOTAL_BANDITS) return;
+      const w = randomWindow();
+      state.bandit = {
+        windowRow: w.row, windowCol: w.col,
+        alive: true, peeking: false, peekStart: 0, shooting: false,
+        nextAction: Date.now() + BANDIT_HIDE_MIN + Math.random() * (BANDIT_HIDE_MAX - BANDIT_HIDE_MIN),
+      };
+      state.banditsRemaining = TOTAL_BANDITS - banditsKilledTotal;
+    }
+
+    function checkWin(): boolean {
+      // All bandits killed — player with most kills wins
+      if (banditsKilledTotal >= TOTAL_BANDITS) {
+        running = false;
+        const k1 = state.players[p1].kills, k2 = state.players[p2].kills;
+        const winner = k1 > k2 ? p1 : k2 > k1 ? p2 : Math.random() < 0.5 ? p1 : p2;
+        state.winner = winner;
+        ctx.emit('game:state', state);
+        ctx.endRound(winner);
+        return true;
+      }
+
+      // Check if a player lost all lives
+      if (!state.players[p1].alive && !state.players[p2].alive) {
+        running = false;
+        const k1 = state.players[p1].kills, k2 = state.players[p2].kills;
+        const winner = k1 > k2 ? p1 : k2 > k1 ? p2 : Math.random() < 0.5 ? p1 : p2;
+        state.winner = winner;
+        ctx.emit('game:state', state);
+        ctx.endRound(winner);
+        return true;
+      }
+      if (!state.players[p1].alive) {
+        running = false; state.winner = p2;
+        ctx.emit('game:state', state); ctx.endRound(p2); return true;
+      }
+      if (!state.players[p2].alive) {
+        running = false; state.winner = p1;
+        ctx.emit('game:state', state); ctx.endRound(p1); return true;
+      }
+
+      return false;
+    }
 
     const interval = setInterval(() => {
       if (!running) return;
       const now = Date.now();
-      const elapsed = now - startTime;
-      state.timeRemaining = Math.max(0, (GAME_DURATION - elapsed) / 1000);
 
-      if (elapsed >= GAME_DURATION) {
-        running = false;
-        const w = state.players[p1].kills > state.players[p2].kills ? p1 :
-                  state.players[p2].kills > state.players[p1].kills ? p2 :
-                  Math.random() < 0.5 ? p1 : p2;
-        state.winner = w;
-        ctx.emit('game:state', state);
-        ctx.endRound(w);
-        return;
-      }
-
-      // Clear stun
-      for (const pid of ctx.players) {
-        const p = state.players[pid];
-        if (p.stunned && now >= p.stunEnd) {
-          p.stunned = false;
+      // Bandit AI
+      const b = state.bandit;
+      if (b.alive) {
+        if (!b.peeking && now >= b.nextAction) {
+          // Peek out
+          b.peeking = true;
+          b.peekStart = now;
+          b.shooting = false;
         }
-      }
 
-      // Update bandits
-      for (const bandit of state.bandits) {
-        if (now >= bandit.nextToggle) {
-          if (!bandit.visible) {
-            // Peek out
-            bandit.visible = true;
-            bandit.windingUp = false;
-            bandit.targetPlayer = null;
-            bandit.nextToggle = now + BANDIT_VISIBLE_MIN + Math.random() * (BANDIT_VISIBLE_MAX - BANDIT_VISIBLE_MIN);
-            // Will start winding up to shoot
-            bandit.shootTime = now + BANDIT_SHOOT_WINDUP + Math.random() * 400;
-          } else {
-            // Hide
-            bandit.visible = false;
-            bandit.windingUp = false;
-            bandit.targetPlayer = null;
-            bandit.nextToggle = now + BANDIT_PEEK_MIN + Math.random() * (BANDIT_PEEK_MAX - BANDIT_PEEK_MIN);
+        if (b.peeking) {
+          const peekElapsed = now - b.peekStart;
+
+          // Shoot at a random peeking player after delay
+          if (!b.shooting && peekElapsed >= BANDIT_SHOOT_DELAY) {
+            b.shooting = true;
+            const peekingPlayers = ctx.players.filter((pid) => state.players[pid].peeking && state.players[pid].alive);
+            if (peekingPlayers.length > 0) {
+              const target = peekingPlayers[Math.floor(Math.random() * peekingPlayers.length)];
+              const tp = state.players[target];
+              const bx = windowCenterX(b.windowCol);
+              const by = windowCenterY(b.windowRow);
+              const tx = tp.baseX + PLAYER_W / 2;
+              const ty = PLAYER_Y + PLAYER_H / 4;
+              const dx = tx - bx, dy = ty - by;
+              const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+              state.projectiles.push({
+                x: bx, y: by,
+                vx: (dx / dist) * BULLET_SPEED * 0.7,
+                vy: (dy / dist) * BULLET_SPEED * 0.7,
+                fromBandit: true, targetPlayer: target,
+              });
+            }
           }
-        }
 
-        // Bandit shooting logic — bandits shoot at any non-stunned player
-        if (bandit.visible && !bandit.windingUp && now >= bandit.shootTime) {
-          const targetablePlayers = ctx.players.filter((pid) => !state.players[pid].stunned);
-          if (targetablePlayers.length > 0) {
-            bandit.windingUp = true;
-            bandit.targetPlayer = targetablePlayers[Math.floor(Math.random() * targetablePlayers.length)];
-            bandit.shootTime = now + BANDIT_SHOOT_WINDUP;
+          // Hide after peek duration
+          if (peekElapsed >= BANDIT_PEEK_DURATION) {
+            b.peeking = false;
+            b.shooting = false;
+            // Move to new window
+            const w = randomWindow();
+            b.windowRow = w.row;
+            b.windowCol = w.col;
+            b.nextAction = now + BANDIT_HIDE_MIN + Math.random() * (BANDIT_HIDE_MAX - BANDIT_HIDE_MIN);
           }
-        }
-
-        // Fire projectile
-        if (bandit.windingUp && now >= bandit.shootTime && bandit.targetPlayer) {
-          const target = state.players[bandit.targetPlayer];
-          const bx = windowCenterX(bandit.col);
-          const by = windowCenterY(bandit.row);
-          const tx = target.baseX + PLAYER_W / 2;
-          const ty = PLAYER_Y + PLAYER_H / 4;
-          const dx = tx - bx, dy = ty - by;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          state.projectiles.push({
-            x: bx, y: by,
-            vx: (dx / dist) * BULLET_SPEED,
-            vy: (dy / dist) * BULLET_SPEED,
-            fromBandit: true,
-            targetPlayer: bandit.targetPlayer,
-          });
-
-          bandit.windingUp = false;
-          bandit.targetPlayer = null;
-          // Hide soon after shooting
-          bandit.nextToggle = now + 300 + Math.random() * 500;
         }
       }
 
@@ -200,21 +215,38 @@ export const cowboyShootoutGame: ServerGameModule = {
       state.projectiles = state.projectiles.filter((proj) => {
         proj.x += proj.vx;
         proj.y += proj.vy;
-
-        // Off screen?
         if (proj.x < -20 || proj.x > W + 20 || proj.y < -20 || proj.y > H + 20) return false;
 
         // Bandit bullet hitting players
         if (proj.fromBandit) {
           for (const pid of ctx.players) {
             const p = state.players[pid];
-            if (!p.peeking || p.stunned) continue;
+            if (!p.peeking || !p.alive) continue;
             const dx = proj.x - (p.baseX + PLAYER_W / 2);
             const dy = proj.y - (PLAYER_Y + PLAYER_H / 2);
             if (Math.abs(dx) < PLAYER_W && Math.abs(dy) < PLAYER_H / 2) {
-              p.stunned = true;
-              p.stunEnd = now + STUN_DURATION;
+              p.lives--;
               p.peeking = false;
+              if (p.lives <= 0) p.alive = false;
+              if (checkWin()) return false;
+              return false;
+            }
+          }
+        } else {
+          // Player bullet hitting bandit
+          if (b.alive && b.peeking) {
+            const bx = windowCenterX(b.windowCol);
+            const by = windowCenterY(b.windowRow);
+            if (Math.abs(proj.x - bx) < WINDOW_W / 2 + 5 && Math.abs(proj.y - by) < WINDOW_H / 2 + 5) {
+              b.alive = false;
+              banditsKilledTotal++;
+              if (proj.owner && state.players[proj.owner]) {
+                state.players[proj.owner].kills++;
+              }
+              state.banditsRemaining = TOTAL_BANDITS - banditsKilledTotal;
+              if (checkWin()) return false;
+              // Spawn next bandit after delay
+              setTimeout(() => { if (running) spawnNextBandit(); }, 500);
               return false;
             }
           }
@@ -231,36 +263,34 @@ export const cowboyShootoutGame: ServerGameModule = {
         if (!running) return;
         const input = data as { peek?: boolean; shoot?: boolean; x?: number; y?: number };
         const p = state.players[playerId];
-        if (!p) return;
+        if (!p || !p.alive) return;
 
         if (input.x !== undefined && input.y !== undefined) {
           p.cursorX = input.x;
           p.cursorY = input.y;
         }
 
-        if (input.peek !== undefined && !p.stunned) {
-          p.peeking = input.peek;
-        }
+        if (input.peek !== undefined) p.peeking = input.peek;
 
-        if (input.shoot && p.peeking && !p.stunned) {
+        if (input.shoot && p.peeking) {
           const now = Date.now();
-          if (now - p.lastShot < SHOOT_COOLDOWN) return;
+          if (now - p.lastShot < PLAYER_SHOOT_COOLDOWN) return;
           p.lastShot = now;
 
-          // Check hit on bandits
-          for (const bandit of state.bandits) {
-            if (!bandit.visible) continue;
-            const bx = windowCenterX(bandit.col);
-            const by = windowCenterY(bandit.row);
-            if (Math.abs(p.cursorX - bx) < WINDOW_W / 2 + 5 && Math.abs(p.cursorY - by) < WINDOW_H / 2 + 5) {
-              p.kills++;
-              bandit.visible = false;
-              bandit.windingUp = false;
-              bandit.targetPlayer = null;
-              bandit.nextToggle = Date.now() + BANDIT_PEEK_MIN + Math.random() * BANDIT_PEEK_MAX;
-              break;
-            }
-          }
+          // Fire projectile toward cursor
+          const sx = p.baseX + PLAYER_W / 2 + 15;
+          const sy = PLAYER_Y;
+          const dx = p.cursorX - sx, dy = p.cursorY - sy;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          state.projectiles.push({
+            x: sx, y: sy,
+            vx: (dx / dist) * BULLET_SPEED,
+            vy: (dy / dist) * BULLET_SPEED,
+            fromBandit: false,
+            owner: playerId,
+          });
+
+          // Check if bullet would hit bandit (also handled in tick, but for responsiveness)
         }
       },
       getState() { return state; },

@@ -97,7 +97,8 @@ export default function SpaceBossGame() {
         c.fillRect(ox + boss.x + BOSS_W - 30, boss.y + BOSS_H - 3, 15, 6);
 
         // Boss HP bar
-        const hpPct = p.bossHp / 120;
+        const BOSS_HP_MAX = 90;
+        const hpPct = p.bossHp / BOSS_HP_MAX;
         c.fillStyle = '#222'; c.fillRect(ox + 10, 8, HALF - 20, 6);
         c.fillStyle = hpPct > 0.5 ? '#cc44ff' : hpPct > 0.25 ? '#ffaa00' : '#ff4444';
         c.fillRect(ox + 10, 8, (HALF - 20) * hpPct, 6);

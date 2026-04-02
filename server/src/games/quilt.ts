@@ -73,7 +73,7 @@ function rotatePiece(shape: Shape, times: number): Shape {
 
 interface PlayerState {
   currentQuilt: number;
-  grid: (string | null)[][];
+  grid: (number | null)[][]; // piece index or null
   selectedPiece: number;
   rotation: number;
   placedPieces: boolean[];
@@ -103,7 +103,7 @@ export const quiltGame: ServerGameModule = {
     const quilts = [generateQuilt(0), generateQuilt(1), generateQuilt(2)];
 
     function makePlayer(q: Quilt): PlayerState {
-      const grid: (string | null)[][] = [];
+      const grid: (number | null)[][] = [];
       for (let r = 0; r < q.gridH; r++) grid.push(new Array(q.gridW).fill(null));
       return { currentQuilt: 0, grid, selectedPiece: 0, rotation: 0, placedPieces: new Array(q.pieces.length).fill(false), completed: false, quiltsCompleted: 0 };
     }
@@ -165,7 +165,7 @@ export const quiltGame: ServerGameModule = {
             return nc >= 0 && nc < quilt.gridW && nr >= 0 && nr < quilt.gridH && p.grid[nr][nc] === null;
           });
           if (!ok) return;
-          shape.forEach(([dc, dr]) => { p.grid[input.row! + dr][input.col! + dc] = piece.color; });
+          shape.forEach(([dc, dr]) => { p.grid[input.row! + dr][input.col! + dc] = p.selectedPiece; });
           p.placedPieces[p.selectedPiece] = true;
 
           // Select next unplaced
@@ -175,24 +175,17 @@ export const quiltGame: ServerGameModule = {
 
           if (p.placedPieces.every((v) => v)) advanceQuilt(playerId);
         } else if (input.action === 'remove' && input.col !== undefined && input.row !== undefined) {
-          // Remove a placed piece by clicking on it
-          const color = p.grid[input.row]?.[input.col];
-          if (!color) return;
-          // Find which piece has this color and remove all its cells
-          for (let pi = 0; pi < quilt.pieces.length; pi++) {
-            if (quilt.pieces[pi].color === color && p.placedPieces[pi]) {
-              // Clear all cells of this color
-              for (let r = 0; r < quilt.gridH; r++) {
-                for (let c = 0; c < quilt.gridW; c++) {
-                  if (p.grid[r][c] === color) p.grid[r][c] = null;
-                }
-              }
-              p.placedPieces[pi] = false;
-              p.selectedPiece = pi;
-              p.rotation = 0;
-              break;
+          const pieceIdx = p.grid[input.row]?.[input.col];
+          if (pieceIdx === null || pieceIdx === undefined) return;
+          // Clear all cells belonging to this piece
+          for (let r = 0; r < quilt.gridH; r++) {
+            for (let c = 0; c < quilt.gridW; c++) {
+              if (p.grid[r][c] === pieceIdx) p.grid[r][c] = null;
             }
           }
+          p.placedPieces[pieceIdx] = false;
+          p.selectedPiece = pieceIdx;
+          p.rotation = 0;
         }
 
         ctx.emit('game:state', state);

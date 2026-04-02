@@ -7,7 +7,7 @@ type Shape = [number, number][];
 
 interface Quilt { gridW: number; gridH: number; pieces: { shape: Shape; color: string }[]; }
 interface PlayerState {
-  currentQuilt: number; grid: (string | null)[][]; selectedPiece: number; rotation: number;
+  currentQuilt: number; grid: (number | null)[][]; selectedPiece: number; rotation: number;
   placedPieces: boolean[]; completed: boolean; quiltsCompleted: number;
 }
 interface QuiltState {
@@ -169,7 +169,8 @@ export default function QuiltGame() {
         for (let r = 0; r < quilt.gridH; r++) {
           for (let col = 0; col < quilt.gridW; col++) {
             const cx = gridOx + col * CELL, cy = gridOy + r * CELL;
-            const cellColor = p.grid[r]?.[col];
+            const pieceIdx = p.grid[r]?.[col];
+            const cellColor = pieceIdx !== null && pieceIdx !== undefined ? quilt.pieces[pieceIdx]?.color ?? '#888' : null;
             c.fillStyle = cellColor ?? '#1a1a1a';
             c.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
             c.strokeStyle = '#333'; c.lineWidth = 1;

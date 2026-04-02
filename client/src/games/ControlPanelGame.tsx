@@ -23,6 +23,7 @@ export default function ControlPanelGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const interpRef = useRef(new StateBuffer<ControlPanelState>()).current;
   const flashRef = useRef<{ time: number; correct: boolean }>({ time: 0, correct: true });
+  const pressedRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
 
   useEffect(() => {
     socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
@@ -62,14 +63,16 @@ export default function ControlPanelGame() {
 
       for (const ctrl of state.controls) {
         const b = getControlBounds(ctrl, ox, HALF);
-        if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+        const hitW = ctrl.type === 'slider' ? b.w * 2 + CTRL_GAP : b.w;
+        if (mx >= b.x && mx <= b.x + hitW && my >= b.y && my <= b.y + b.h) {
+          pressedRef.current = { id: ctrl.id, time: Date.now() };
           if (ctrl.type === 'button' || ctrl.type === 'lever') {
             const cmd = state.commands[p.currentCommand];
             flashRef.current = { time: Date.now(), correct: cmd?.controlId === ctrl.id && cmd?.action === 'press' };
             socket.emit('game:input', { controlId: ctrl.id });
           } else if (ctrl.type === 'slider') {
-            // Click position maps to slider value
-            const relX = (mx - b.x) / b.w;
+            const sliderW = b.w * 2 + CTRL_GAP;
+            const relX = (mx - b.x) / sliderW;
             const val = Math.round(relX * (ctrl.sliderMax ?? 9));
             socket.emit('game:input', { controlId: ctrl.id, sliderValue: val });
             const cmd = state.commands[p.currentCommand];
@@ -152,50 +155,65 @@ export default function ControlPanelGame() {
         c.strokeStyle = '#444'; c.lineWidth = 2; c.strokeRect(panelOx - 10, panelOy - 10, panelW, panelH);
 
         // Controls
+        const pressAge = Date.now() - pressedRef.current.time;
         for (const ctrl of state.controls) {
           const bx = panelOx + ctrl.col * (CTRL_W + CTRL_GAP);
           const by = panelOy + ctrl.row * (CTRL_H + CTRL_GAP);
           const val = p.controlValues[ctrl.id] ?? 0;
+          const justPressed = isMe && pressedRef.current.id === ctrl.id && pressAge < 200;
+          const renderW = ctrl.type === 'slider' ? CTRL_W * 2 + CTRL_GAP : CTRL_W;
 
           c.fillStyle = '#3a3a4a';
-          c.fillRect(bx, by, CTRL_W, CTRL_H);
+          c.fillRect(bx, by, renderW, CTRL_H);
 
           if (ctrl.type === 'button') {
+            // Button — flash bright when pressed
+            const btnColor = justPressed ? '#ff8888' : '#cc4444';
             c.beginPath(); c.arc(bx + CTRL_W / 2, by + 22, 14, 0, Math.PI * 2);
-            c.fillStyle = '#cc4444'; c.fill();
-            c.strokeStyle = '#aa3333'; c.lineWidth = 2; c.stroke();
+            c.fillStyle = btnColor; c.fill();
+            c.strokeStyle = justPressed ? '#ffffff' : '#aa3333'; c.lineWidth = 2; c.stroke();
+            if (justPressed) {
+              c.beginPath(); c.arc(bx + CTRL_W / 2, by + 22, 17, 0, Math.PI * 2);
+              c.strokeStyle = '#ffffff44'; c.stroke();
+            }
           } else if (ctrl.type === 'lever') {
+            // Lever — show toggle state (flash when pulled)
+            const leverY = justPressed ? by + 28 : by + 10;
             c.fillStyle = '#666'; c.fillRect(bx + CTRL_W / 2 - 3, by + 8, 6, 30);
-            c.beginPath(); c.arc(bx + CTRL_W / 2, by + 10, 6, 0, Math.PI * 2);
-            c.fillStyle = '#888'; c.fill();
+            c.beginPath(); c.arc(bx + CTRL_W / 2, leverY, 6, 0, Math.PI * 2);
+            c.fillStyle = justPressed ? '#44ff88' : '#888'; c.fill();
+            if (justPressed) {
+              c.strokeStyle = '#44ff88'; c.lineWidth = 2; c.stroke();
+            }
           } else if (ctrl.type === 'slider') {
-            // Slider track
+            // Slider — 2 tiles wide
             const trackY = by + 22;
-            c.fillStyle = '#222'; c.fillRect(bx + 8, trackY, CTRL_W - 16, 6);
-            // Slider handle
+            const trackW = renderW - 16;
+            c.fillStyle = '#222'; c.fillRect(bx + 8, trackY, trackW, 6);
+            // Tick marks
             const max = ctrl.sliderMax ?? 9;
-            const handleX = bx + 8 + (val / max) * (CTRL_W - 16);
-            c.fillStyle = '#4488ff'; c.fillRect(handleX - 4, trackY - 4, 8, 14);
-            // Value label
-            drawLabel(c, `${val}`, bx + CTRL_W / 2, trackY + 22, { color: '#4488ff', font: '11px monospace' });
+            for (let t = 0; t <= max; t++) {
+              const tx = bx + 8 + (t / max) * trackW;
+              c.fillStyle = '#444'; c.fillRect(tx, trackY - 2, 1, 10);
+            }
+            // Handle
+            const handleX = bx + 8 + (val / max) * trackW;
+            c.fillStyle = '#4488ff'; c.fillRect(handleX - 5, trackY - 5, 10, 16);
+            drawLabel(c, `${val}`, bx + renderW / 2, trackY + 22, { color: '#4488ff', font: '11px monospace' });
           } else if (ctrl.type === 'knob') {
-            // Knob circle
             const kcx = bx + CTRL_W / 2, kcy = by + 20;
             c.beginPath(); c.arc(kcx, kcy, 12, 0, Math.PI * 2);
             c.fillStyle = '#555'; c.fill();
-            c.strokeStyle = '#777'; c.lineWidth = 2; c.stroke();
-            // Position dot
+            c.strokeStyle = justPressed ? '#ffcc00' : '#777'; c.lineWidth = 2; c.stroke();
             const opts = ctrl.knobOptions ?? ['A', 'B', 'C', 'D'];
-            const angle = -Math.PI / 2 + (val / (opts.length - 1)) * Math.PI;
+            const angle = -Math.PI / 2 + (val / Math.max(1, opts.length - 1)) * Math.PI;
             c.beginPath();
             c.arc(kcx + Math.cos(angle) * 8, kcy + Math.sin(angle) * 8, 3, 0, Math.PI * 2);
             c.fillStyle = '#ffcc00'; c.fill();
-            // Current option label
             drawLabel(c, opts[val] ?? '?', kcx, kcy + 26, { color: '#ffcc00', font: '9px monospace' });
           }
 
-          // Control name
-          drawLabel(c, ctrl.name, bx + CTRL_W / 2, by + CTRL_H - 3, { color: '#ccc', font: '8px monospace' });
+          drawLabel(c, ctrl.name, bx + renderW / 2, by + CTRL_H - 3, { color: '#ccc', font: '8px monospace' });
         }
 
         // Wrong flash

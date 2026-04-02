@@ -19,34 +19,51 @@ function generatePath(): { grid: boolean[][]; startR: number; endR: number; endC
   let col = 0;
   const startR = row;
 
-  // Starting pad (small)
+  // Start
   grid[row][0] = true;
   grid[row][1] = true;
   col = 2;
+  let lastDir = 'right';
+  let stepsInDir = 0;
 
   while (col < COLS - 2) {
     grid[row][col] = true;
 
-    // Windier path: favor vertical movement, with mandatory right progress
+    // Pick direction — winding single-tile path
+    // Rules: always make forward progress, never retrace, favor direction changes
+    const canUp = row > 2;
+    const canDown = row < ROWS - 3;
     const roll = Math.random();
-    if (roll < 0.35) {
-      col++; // right
-    } else if (roll < 0.55 && row > 2) {
-      row--; // up (more likely than before)
-    } else if (roll < 0.75 && row < ROWS - 3) {
-      row++; // down
-    } else if (roll < 0.85 && row > 2) {
-      // Double up
-      row--; grid[row][col] = true; row--;
-    } else if (roll < 0.95 && row < ROWS - 3) {
-      // Double down
-      row++; grid[row][col] = true; row++;
-    } else {
-      col++; // right fallback
-    }
 
-    // Ensure we make rightward progress every few steps
-    if (col < COLS - 3 && Math.random() < 0.15) col++;
+    // Force direction change after a few steps in the same direction
+    const forceTurn = stepsInDir > 2 + Math.floor(Math.random() * 3);
+
+    if (lastDir === 'right' || forceTurn) {
+      // After going right (or forced turn), go up or down
+      if (roll < 0.5 && canUp) {
+        row--; lastDir = 'up'; stepsInDir = 1;
+      } else if (canDown) {
+        row++; lastDir = 'down'; stepsInDir = 1;
+      } else if (canUp) {
+        row--; lastDir = 'up'; stepsInDir = 1;
+      } else {
+        col++; lastDir = 'right'; stepsInDir++;
+      }
+    } else if (lastDir === 'up') {
+      if (!forceTurn && canUp && roll < 0.5) {
+        row--; stepsInDir++;
+      } else {
+        col++; lastDir = 'right'; stepsInDir = 1;
+      }
+    } else if (lastDir === 'down') {
+      if (!forceTurn && canDown && roll < 0.5) {
+        row++; stepsInDir++;
+      } else {
+        col++; lastDir = 'right'; stepsInDir = 1;
+      }
+    } else {
+      col++; lastDir = 'right'; stepsInDir++;
+    }
   }
 
   // End tile
