@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawSkyGradient } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const BIRD_X = 80, BIRD_R = 12, PIPE_W = 40;
@@ -45,7 +46,7 @@ export default function FlappyRaceGame() {
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       canvas.width = W; canvas.height = H;
 
-      drawBackground(c, 'flappy-race', W, H, { color: '#0a1628' });
+      drawSkyGradient(c, W, H, '#0a1628', '#1a2a40');
 
       // Divider
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
@@ -65,11 +66,31 @@ export default function FlappyRaceGame() {
           const px = ox + pipe.x - state.scrollOffset;
           if (px + PIPE_W < ox || px > ox + HALF) continue;
           const gh = pipe.gapH;
-          drawSprite(c, 'pipe', px, 0, PIPE_W, pipe.gapY - gh / 2, { color: '#2d8b4e' });
-          drawSprite(c, 'pipe', px, pipe.gapY + gh / 2, PIPE_W, H - (pipe.gapY + gh / 2), { color: '#2d8b4e' });
-          // Caps
-          drawSprite(c, 'pipe', px - 3, pipe.gapY - gh / 2 - 8, PIPE_W + 6, 8, { color: '#3aa55d' });
-          drawSprite(c, 'pipe', px - 3, pipe.gapY + gh / 2, PIPE_W + 6, 8, { color: '#3aa55d' });
+          // Top pipe body with 3D cylinder gradient
+          const pipeGradTop = c.createLinearGradient(px, 0, px + PIPE_W, 0);
+          pipeGradTop.addColorStop(0, '#1a6b2e');
+          pipeGradTop.addColorStop(0.3, '#3aa55d');
+          pipeGradTop.addColorStop(0.7, '#3aa55d');
+          pipeGradTop.addColorStop(1, '#1a6b2e');
+          c.fillStyle = pipeGradTop;
+          c.fillRect(px, 0, PIPE_W, pipe.gapY - gh / 2);
+          // Bottom pipe body with 3D cylinder gradient
+          const pipeGradBot = c.createLinearGradient(px, 0, px + PIPE_W, 0);
+          pipeGradBot.addColorStop(0, '#1a6b2e');
+          pipeGradBot.addColorStop(0.3, '#3aa55d');
+          pipeGradBot.addColorStop(0.7, '#3aa55d');
+          pipeGradBot.addColorStop(1, '#1a6b2e');
+          c.fillStyle = pipeGradBot;
+          c.fillRect(px, pipe.gapY + gh / 2, PIPE_W, H - (pipe.gapY + gh / 2));
+          // Caps with gradient
+          const capGrad = c.createLinearGradient(px - 3, 0, px - 3 + PIPE_W + 6, 0);
+          capGrad.addColorStop(0, '#1a8b3e');
+          capGrad.addColorStop(0.3, '#4cc76d');
+          capGrad.addColorStop(0.7, '#4cc76d');
+          capGrad.addColorStop(1, '#1a8b3e');
+          c.fillStyle = capGrad;
+          c.fillRect(px - 3, pipe.gapY - gh / 2 - 8, PIPE_W + 6, 8);
+          c.fillRect(px - 3, pipe.gapY + gh / 2, PIPE_W + 6, 8);
         }
 
         // Bird

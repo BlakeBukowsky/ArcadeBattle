@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawStarfield, drawGlowCircle } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const SHIP_W = 14, SHIP_H = 18, BOSS_W = 80, BOSS_H = 40, PROJ_R = 3;
@@ -59,8 +60,9 @@ export default function SpaceBossGame() {
       canvas.width = W; canvas.height = H;
 
       drawBackground(c, 'space-boss', W, H, { color: '#020010' });
+      drawStarfield(c, W, H, { density: 70 });
 
-      // Star field effect
+      // Animated star field layer (parallax shimmer on top of static starfield)
       for (let i = 0; i < 30; i++) {
         const sx = ((i * 137 + Date.now() * 0.001 * (i % 3 + 1)) % HALF);
         const sy = ((i * 251 + Date.now() * 0.02) % H);
@@ -105,7 +107,7 @@ export default function SpaceBossGame() {
 
         // Boss projectiles
         for (const proj of myProjs) {
-          drawSpriteCircle(c, 'bullet', ox + proj.x, proj.y, PROJ_R, { color: '#ff44aa' });
+          drawGlowCircle(c, ox + proj.x, proj.y, PROJ_R, '#ff44aa');
         }
 
         // Player bullets

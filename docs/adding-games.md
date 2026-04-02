@@ -191,9 +191,11 @@ export default function YourGame() {
       // Background (uses sprite system — auto-upgrades when bg image is loaded)
       drawBackground(ctx, 'your-game', canvas.width, canvas.height, { color: '#1a1a2e' });
 
-      // Draw your game here using sprite API
+      // Draw characters using sprite API (will get sprite art, falls back to humanoid body)
       // drawSprite(ctx, 'player', x, y, w, h, { color: '#00ff88', skin: playerId });
-      // drawSpriteCircle(ctx, 'ball', cx, cy, r, { color: '#fff' });
+      // Draw environment using procedural helpers from '../lib/draw-helpers.js'
+      // drawPlatformBlock(ctx, x, y, w, h, '#444');
+      // drawGlowCircle(ctx, cx, cy, r, '#88ffaa');
       // ...
 
       // Draw scores
@@ -264,7 +266,7 @@ export default function YourGame() {
 4. **Send inputs immediately** — don't debounce or throttle game inputs. The server handles rate limiting if needed.
 5. **Don't compute game logic client-side** — just render what the server sends. The client is a dumb terminal.
 6. **Use `useMyId()` to identify "you" vs "opponent"** — import from `'../context/SocketContext.tsx'`. This returns the persistent userId (not socket.id).
-7. **Use the sprite system for rendering** — import `drawSprite`, `drawSpriteCircle`, `drawLabel`, `drawBackground` from `'../lib/sprites.js'`. Pass `{ skin: playerId }` in options to enable player skin lookup. Falls back to colored shapes when no sprite sheets are loaded.
+7. **Use the sprite system for player characters and enemies** — import `drawSprite`, `drawSpriteCircle`, `drawLabel`, `drawBackground` from `'../lib/sprites.js'`. Pass `{ skin: playerId }` in options to enable player skin lookup. Characters fall back to humanoid body placeholders; everything else falls back to enhanced colored shapes. For environment entities (platforms, projectiles, balls), use the shared helpers from `'../lib/draw-helpers.js'` (`drawPlatformBlock`, `drawGlowCircle`, `drawShinySphere`, `drawStarfield`) for polished procedural rendering.
 8. **Use `applyStateUpdate` for state handling** — import from `'../lib/net.js'`. Handles both full state and delta-compressed updates from the server automatically. See template above.
 9. **For lag-sensitive games, consider client-side prediction** — import `PositionPredictor` from `'../lib/prediction.js'` to apply local movement instantly while smoothly correcting toward server state. See Pong for a reference implementation.
 
@@ -316,32 +318,44 @@ Games in the "All" set (empty `gameIds`) are automatically included.
 
 | Pattern | Example | Files |
 |---------|---------|-------|
-| Canvas + keyboard (platformer) | Joust, Volleyball, Ball Brawl | `joust.ts` / `JoustGame.tsx` |
-| Canvas + keyboard (side-scroll) | Fencing | `fencing.ts` / `FencingGame.tsx` |
+| Canvas + keyboard (platformer) | Joust, Volleyball | `joust.ts` / `JoustGame.tsx` |
+| Canvas + keyboard (top-down) | Tanks, Balance | `tanks.ts` / `TanksGame.tsx` |
 | Canvas + mouse | Air Hockey, Aim Trainer | `air-hockey.ts` / `AirHockeyGame.tsx` |
-| Canvas + mouse (shooter) | Cowboy Shootout | `cowboy-shootout.ts` / `CowboyShootoutGame.tsx` |
+| Canvas + mouse aim + click | Cowboy Shootout, Rounds | `rounds.ts` / `RoundsGame.tsx` |
 | Split-screen survival | Asteroid Dodge, Flappy Race | `asteroid-dodge.ts` / `AsteroidDodgeGame.tsx` |
-| Split-screen race | Space Invaders | `space-invaders.ts` / `SpaceInvadersGame.tsx` |
+| Split-screen race | Space Invaders, Typing Race | `space-invaders.ts` / `SpaceInvadersGame.tsx` |
+| Split-screen platformer | Cave Dive | `spelunky.ts` / `SpelunkyGame.tsx` |
+| Split-screen bullet hell | Space Boss | `space-boss.ts` / `SpaceBossGame.tsx` |
+| Split-screen puzzle | Quilt, Control Panel | `quilt.ts` / `QuiltGame.tsx` |
+| Split-screen fog-of-war | Balance | `balance.ts` / `BalanceGame.tsx` |
+| Shared arena (rotation) | Asteroids PvP | `asteroids.ts` / `AsteroidsGame.tsx` |
+| Shared arena (platformer) | Rounds | `rounds.ts` / `RoundsGame.tsx` |
+| Shared track | Racing | `racing.ts` / `RacingGame.tsx` |
 | Classic paddle | Pong | `pong.ts` / `PongGame.tsx` |
-| Timed + score-based | Aim Trainer, Cowboy Shootout | most-in-time |
-| First-to-N | Pong, Joust, Air Hockey, Volleyball | first to score limit |
-| Single-life survival | Asteroid Dodge, Flappy Race | last alive wins |
-| Reach-the-goal | Fencing | first to opponent's end zone |
+| Input-driven (no physics) | Arrow Sequence, Memory, Word Guess | `arrow-sequence.ts` |
+| Multi-layout random maps | Tanks (4), Joust (4), Rounds (5) | Layout arrays in game file |
+| Internal round system | Rounds (best of 3 kills) | `rounds.ts` |
+| Per-player enemies | Cave Dive | `spelunky.ts` |
+| Per-player projectiles | Space Boss, Cowboy Shootout | `space-boss.ts` |
 
 ## Checklist
 
 - [ ] Server module in `server/src/games/`
-  - [ ] Implements `ServerGameModule` interface
-  - [ ] `cleanup()` stops all timers
-  - [ ] Calls `ctx.endRound()` exactly once
-  - [ ] Description includes controls
+  - [ ] Implements `ServerGameModule` interface with `info.description` AND `info.controls`
+  - [ ] `cleanup()` stops all timers and intervals
+  - [ ] Calls `ctx.endRound()` exactly once per round
+  - [ ] Guards against `endRound` after `running = false`
 - [ ] Client component in `client/src/games/`
-  - [ ] Uses `applyStateUpdate()` from `lib/net.js` for `game:state` handler
-  - [ ] Cleans up event listeners
+  - [ ] Uses `StateBuffer` + `applyStateUpdate()` from `lib/net.js`
+  - [ ] Cleans up all event listeners in useEffect returns
   - [ ] Uses refs for canvas state (not React state)
   - [ ] Uses `useMyId()` not `socket.id` for identity
-  - [ ] Uses sprite system (`drawSprite` / `drawSpriteCircle` / `drawBackground`) for rendering
-  - [ ] Uses `drawBackground()` instead of raw `fillRect` for background
-- [ ] Registered in both server and client registries
-- [ ] Game IDs match between server and client
+  - [ ] Uses sprite system (`drawSprite` / `drawSpriteCircle`) for player characters and enemies
+  - [ ] Uses procedural helpers (`drawPlatformBlock`, `drawGlowCircle`, etc.) for environment
+  - [ ] Uses `drawBackground` with a fallback color for the game's theme
+  - [ ] Passes `{ skin: playerId }` for player-skinnable entities
+- [ ] Registered in both `server/src/games/registry.ts` and `client/src/games/registry.tsx`
+- [ ] Game IDs match exactly between server and client
+- [ ] Added to appropriate game sets (basic, standard, mouseless, or just all)
 - [ ] Works with two browser tabs locally
+- [ ] Sweep collision detection for fast-moving objects (see Pong, Joust)

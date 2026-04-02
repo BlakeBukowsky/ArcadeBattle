@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawPlatformBlock } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PLAYER_W = 24, PLAYER_H = 28;
@@ -56,12 +57,16 @@ export default function JoustGame() {
 
       drawBackground(c, 'joust', canvas.width, canvas.height, { color: '#1a1a2e' });
 
+      // Volcanic lava glow at the bottom
+      const lavaGlow = c.createLinearGradient(0, canvas.height * 0.7, 0, canvas.height);
+      lavaGlow.addColorStop(0, '#00000000');
+      lavaGlow.addColorStop(1, '#ff440012');
+      c.fillStyle = lavaGlow;
+      c.fillRect(0, 0, canvas.width, canvas.height);
+
       // Platforms
       for (const plat of state.platforms) {
-        drawSprite(c, 'platform', plat.x, plat.y, plat.w, 8, { color: '#555' });
-        // Edge highlights
-        c.fillStyle = '#777';
-        c.fillRect(plat.x, plat.y, plat.w, 2);
+        drawPlatformBlock(c, plat.x, plat.y, plat.w, 8, '#555');
       }
 
       // Players

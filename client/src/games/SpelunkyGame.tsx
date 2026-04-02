@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawPlatformBlock } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PW = 12, PH = 16, ENEMY_W = 10, ENEMY_H = 12;
@@ -61,6 +62,13 @@ export default function SpelunkyGame() {
 
       drawBackground(c, 'spelunky', W, H, { color: '#0a0808' });
 
+      // Cave dampness
+      const damp = c.createLinearGradient(0, H * 0.6, 0, H);
+      damp.addColorStop(0, '#00000000');
+      damp.addColorStop(1, '#0022440a');
+      c.fillStyle = damp;
+      c.fillRect(0, 0, W, H);
+
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
       c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
 
@@ -94,7 +102,7 @@ export default function SpelunkyGame() {
             const tx = col * T, ty = r * T;
 
             if (tile === 1) {
-              drawSprite(c, 'platform', tx, ty, T, T, { color: '#5a4a3a' });
+              drawPlatformBlock(c, tx, ty, T, T, '#5a4a3a');
               c.fillStyle = '#4a3a2a'; c.fillRect(tx + 2, ty + 2, T - 4, T - 4);
               // Rock detail
               c.fillStyle = '#6a5a4a';

@@ -53,6 +53,15 @@ export default function AimTrainerGame() {
 
       drawBackground(ctx, 'aim-trainer', canvas.width, canvas.height, { color: '#1a1a2e' });
 
+      // Range rings
+      ctx.strokeStyle = '#ffffff06';
+      ctx.lineWidth = 1;
+      for (let ring = 80; ring < Math.max(canvas.width, canvas.height); ring += 80) {
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, ring, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
       // Targets — concentric rings via sprite API
       state.targets.forEach((t) => {
         drawSpriteCircle(ctx, 'target', t.x, t.y, t.radius, { color: '#ff4444' });

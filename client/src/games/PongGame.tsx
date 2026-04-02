@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawVignette, drawShinySphere } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 import { PositionPredictor } from '../lib/prediction.js';
 
@@ -75,6 +76,14 @@ export default function PongGame() {
 
       drawBackground(ctx, 'pong', W, H, { color: '#1a1a2e' });
 
+      // Faint center glow
+      const centerGlow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, H*0.6);
+      centerGlow.addColorStop(0, '#4444ff08');
+      centerGlow.addColorStop(1, '#00000000');
+      ctx.fillStyle = centerGlow;
+      ctx.fillRect(0, 0, W, H);
+      drawVignette(ctx, W, H, 0.25);
+
       // Center line
       ctx.setLineDash([8, 8]);
       ctx.strokeStyle = '#333';
@@ -98,7 +107,7 @@ export default function PongGame() {
 
       // Ball
       if (!state.serving) {
-        drawSprite(ctx, 'ball', state.ball.x, state.ball.y, BALL_SIZE, BALL_SIZE, { color: '#ffffff' });
+        drawShinySphere(ctx, state.ball.x + BALL_SIZE/2, state.ball.y + BALL_SIZE/2, BALL_SIZE/2, '#ffffff');
       }
 
       // Scores

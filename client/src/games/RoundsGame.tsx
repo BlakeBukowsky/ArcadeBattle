@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawVignette, drawPlatformBlock, drawGlowCircle } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PW = 16, PH = 22, BULLET_R = 4;
@@ -77,16 +78,23 @@ export default function RoundsGame() {
 
       drawBackground(c, 'rounds', W, H, { color: '#12101a' });
 
+      // Subtle spotlight from above
+      const spot = c.createRadialGradient(W/2, -50, 0, W/2, -50, H*0.8);
+      spot.addColorStop(0, '#ffffff06');
+      spot.addColorStop(1, '#00000000');
+      c.fillStyle = spot;
+      c.fillRect(0, 0, W, H);
+      drawVignette(c, W, H, 0.2);
+
       // Platforms
       for (const plat of state.platforms) {
-        drawSprite(c, 'platform', plat.x, plat.y, plat.w, 10, { color: '#444' });
-        c.fillStyle = '#555'; c.fillRect(plat.x, plat.y, plat.w, 2);
+        drawPlatformBlock(c, plat.x, plat.y, plat.w, 10, '#444');
       }
 
       // Bullets
       for (const b of state.bullets) {
         const color = b.owner === myId ? '#88ffaa' : '#ff8888';
-        drawSpriteCircle(c, 'bullet', b.x, b.y, BULLET_R, { color });
+        drawGlowCircle(c, b.x, b.y, BULLET_R, color);
         // Trail
         c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - b.vx * 2, b.y - b.vy * 2);
         c.strokeStyle = color + '44'; c.lineWidth = 2; c.stroke();

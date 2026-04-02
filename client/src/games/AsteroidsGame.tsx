@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawStarfield } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const SHIP_R = 12, BULLET_R = 3;
@@ -80,6 +81,7 @@ export default function AsteroidsGame() {
       canvas.width = W; canvas.height = H;
 
       drawBackground(c, 'asteroids', W, H, { color: '#050510' });
+      drawStarfield(c, W, H, { density: 120 });
 
       // Asteroids
       for (const a of state.asteroids) {

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawPlatformBlock } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PW = 14, PH = 20, ENEMY_W = 14, ENEMY_H = 18;
@@ -58,6 +59,18 @@ export default function NinjaGame() {
 
       drawBackground(c, 'ninja', W, H, { color: '#0a0a0a' });
 
+      // Torchlight ambiance
+      const torch1 = c.createRadialGradient(100, 100, 0, 100, 100, 120);
+      torch1.addColorStop(0, '#ff880008');
+      torch1.addColorStop(1, '#00000000');
+      c.fillStyle = torch1;
+      c.fillRect(0, 0, W, H);
+      const torch2 = c.createRadialGradient(W-100, H-100, 0, W-100, H-100, 120);
+      torch2.addColorStop(0, '#ff880008');
+      torch2.addColorStop(1, '#00000000');
+      c.fillStyle = torch2;
+      c.fillRect(0, 0, W, H);
+
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
       c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
 
@@ -83,7 +96,7 @@ export default function NinjaGame() {
         // Platforms
         for (const room of state.building.rooms) {
           for (const plat of room.platforms) {
-            drawSprite(c, 'platform', plat.x, plat.y, plat.w, 8, { color: '#555' });
+            drawPlatformBlock(c, plat.x, plat.y, plat.w, 8, '#555');
           }
         }
 

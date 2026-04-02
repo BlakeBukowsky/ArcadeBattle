@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawStarfield } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PLAYER_W = 20, PLAYER_H = 20, PLAYER_Y = 450;
@@ -52,6 +53,15 @@ export default function AsteroidDodgeGame() {
       canvas.width = W; canvas.height = H;
 
       drawBackground(c, 'asteroid-dodge', W, H, { color: '#0a0a1a' });
+      drawStarfield(c, W, H, { density: 80 });
+
+      // Faint blue nebula glow in top-right corner
+      const nebula = c.createRadialGradient(W * 0.85, H * 0.15, 0, W * 0.85, H * 0.15, W * 0.4);
+      nebula.addColorStop(0, 'rgba(30, 60, 180, 0.12)');
+      nebula.addColorStop(0.5, 'rgba(20, 40, 120, 0.05)');
+      nebula.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      c.fillStyle = nebula;
+      c.fillRect(0, 0, W, H);
 
       // Divider
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
@@ -74,7 +84,7 @@ export default function AsteroidDodgeGame() {
 
         // Player
         if (p.alive) {
-          drawSprite(c, isMe ? 'ship' : 'ship', ox + p.x, PLAYER_Y, PLAYER_W, PLAYER_H, {
+          drawSprite(c, 'ship', ox + p.x, PLAYER_Y, PLAYER_W, PLAYER_H, {
             color: isMe ? '#00ff88' : '#ff4488', skin: pid,
           });
         } else {

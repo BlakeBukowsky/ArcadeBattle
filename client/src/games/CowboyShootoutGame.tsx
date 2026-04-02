@@ -76,6 +76,14 @@ export default function CowboyShootoutGame() {
 
       // Building
       drawBackground(c, 'cowboy-shootout', W, H, { color: '#3a2a1a' });
+
+      // Desert sky glow
+      const skyGlow = c.createLinearGradient(0, 0, 0, H * 0.3);
+      skyGlow.addColorStop(0, '#4a2a1a15');
+      skyGlow.addColorStop(1, '#00000000');
+      c.fillStyle = skyGlow;
+      c.fillRect(0, 0, W, H);
+
       drawSprite(c, 'cover', 0, 0, W, 35, { color: '#1a1a3e' }); // sky
 
       // All windows

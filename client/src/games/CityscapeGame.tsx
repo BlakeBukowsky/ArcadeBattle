@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawStarfield } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PW = 14, PH = 18, ENEMY_W = 12, ENEMY_H = 14;
@@ -76,6 +77,12 @@ export default function CityscapeGame() {
         grad.addColorStop(1, '#1a1028');
         c.fillStyle = grad;
         c.fillRect(p.cameraX, 0, HALF, H);
+
+        // Stars in top 40% of sky
+        c.save();
+        c.beginPath(); c.rect(p.cameraX, 0, HALF, H * 0.4); c.clip();
+        drawStarfield(c, p.cameraX + HALF, H * 0.4, { density: 40, seed: 54321, brightness: 0.6 });
+        c.restore();
 
         // Buildings
         for (const b of state.buildings) {

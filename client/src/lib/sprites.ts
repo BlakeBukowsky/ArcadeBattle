@@ -4,21 +4,27 @@
  * Supports player skins via a cascading lookup:
  *   1. "{playerId}.{spriteName}"  — player's custom skin for this sprite
  *   2. "{spriteName}"             — default sprite sheet
- *   3. placeholder               — colored shape fallback
+ *   3. placeholder               — procedural fallback
+ *
+ * Sprite priority: player characters and enemies will get sprite art first.
+ * Everything else (platforms, projectiles, balls, backgrounds) uses polished
+ * procedural rendering and may stay that way permanently.
  *
  * Usage in a game component:
  *   import { drawSprite } from '../lib/sprites';
  *   // In draw loop — pass playerId in opts.skin to enable skin lookup:
- *   drawSprite(ctx, 'ball', x, y, w, h, { color: '#fff', skin: playerId });
- *   // Without skin, just does: "ball" sheet → placeholder
+ *   drawSprite(ctx, 'player', x, y, w, h, { color: '#00ff88', skin: playerId });
+ *   // Without skin, just does: "player" sheet → character body placeholder
  *   drawSprite(ctx, 'paddle', x, y, w, h, { color: '#00ff88' });
  *
  * Loading skins:
- *   // Load a player's custom ball sprite:
- *   loadSpriteSheet('usr_abc123.ball', '/skins/usr_abc123/ball.png', 32, 32);
- *   // Load default ball sprite:
- *   loadSpriteSheet('ball', '/sprites/ball.png', 32, 32);
+ *   // Load a player's custom sprite:
+ *   loadSpriteSheet('usr_abc123.player', '/skins/usr_abc123/player.png', 32, 32);
+ *   // Load default sprite:
+ *   loadSpriteSheet('player', '/sprites/player.png', 32, 32);
  */
+
+import { drawCharacterBody, drawEnemyBody } from './draw-helpers.js';
 
 export type SpriteName =
   | 'player'
@@ -182,8 +188,15 @@ export function drawPlaceholderRect(
 ): void {
   ctx.save();
   if (opts?.alpha !== undefined) ctx.globalAlpha = opts.alpha;
-  ctx.fillStyle = opts?.color ?? '#888';
+  const color = opts?.color ?? '#888';
+  ctx.fillStyle = color;
   ctx.fillRect(x, y, w, h);
+  // Top-edge highlight for depth
+  ctx.fillStyle = '#ffffff18';
+  ctx.fillRect(x, y, w, Math.min(2, h));
+  // Bottom-edge shadow
+  ctx.fillStyle = '#00000018';
+  ctx.fillRect(x, y + h - 1, w, 1);
   ctx.restore();
 }
 
@@ -198,6 +211,13 @@ export function drawPlaceholderCircle(
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fillStyle = opts?.color ?? '#888';
   ctx.fill();
+  // Highlight for volume
+  if (r >= 4) {
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.2, cy - r * 0.2, r * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff30';
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -228,6 +248,11 @@ export function drawLabel(
  *   drawSprite(ctx, 'paddle', x, y, 12, 80, { color: '#00ff88' })
  *     → tries "paddle" sheet, then green rect
  */
+/** Sprite names that represent player characters — fallback uses humanoid body */
+const CHARACTER_SPRITES = new Set(['player', 'opponent']);
+/** Sprite names that represent enemies — fallback uses menacing body */
+const ENEMY_SPRITES = new Set(['invader', 'bandit']);
+
 export function drawSprite(
   ctx: CanvasRenderingContext2D,
   name: string,
@@ -239,6 +264,16 @@ export function drawSprite(
 
   if (key) {
     if (drawSpriteFrame(ctx, key, frame, x, y, w, h, opts)) return;
+  }
+
+  // Character-aware fallback: humanoid body for players, menacing body for enemies
+  if (CHARACTER_SPRITES.has(name)) {
+    drawCharacterBody(ctx, x, y, w, h, opts?.color ?? '#888', opts?.facing ?? 1, { alpha: opts?.alpha });
+    return;
+  }
+  if (ENEMY_SPRITES.has(name)) {
+    drawEnemyBody(ctx, x, y, w, h, opts?.color ?? '#888', opts?.facing ?? 1, { alpha: opts?.alpha });
+    return;
   }
 
   drawPlaceholderRect(ctx, x, y, w, h, opts);
@@ -303,10 +338,14 @@ export function drawBackground(
     return;
   }
 
-  // Fallback: solid color fill
+  // Fallback: gradient fill (slightly lighter at top for depth)
   ctx.save();
   if (opts?.alpha !== undefined) ctx.globalAlpha = opts.alpha;
-  ctx.fillStyle = opts?.color ?? '#0a0a1a';
+  const bgColor = opts?.color ?? '#0a0a1a';
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, bgColor);
+  grad.addColorStop(1, darkenColor(bgColor, 0.15));
+  ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
   ctx.restore();
 }
@@ -333,6 +372,16 @@ export function drawBackgroundLayer(
   if (!key) return; // layers are optional — no fallback
 
   drawBgImage(ctx, key, w, h, opts);
+}
+
+/** Internal: darken a hex color by a fraction (0-1). */
+function darkenColor(hex: string, amount: number): string {
+  const c = hex.replace('#', '');
+  const num = parseInt(c.length === 3 ? c.split('').map(ch => ch + ch).join('') : c, 16);
+  const r = Math.max(0, ((num >> 16) & 0xff) * (1 - amount)) | 0;
+  const g = Math.max(0, ((num >> 8) & 0xff) * (1 - amount)) | 0;
+  const b = Math.max(0, (num & 0xff) * (1 - amount)) | 0;
+  return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
 }
 
 /** Internal: draw a background image with scroll/parallax/tile support. */

@@ -59,6 +59,14 @@ export default function TanksGame() {
 
       drawBackground(c, 'tanks', W, H, { color: '#1a1a1a' });
 
+      // Concrete dust motes
+      c.fillStyle = '#ffffff03';
+      for (let i = 0; i < 30; i++) {
+        const dx = ((i * 7919) % W);
+        const dy = ((i * 6271) % H);
+        c.fillRect(dx, dy, 2, 2);
+      }
+
       // Walls
       for (const wall of state.walls) {
         drawSprite(c, 'platform', wall.x, wall.y, wall.w, wall.h, { color: '#555' });

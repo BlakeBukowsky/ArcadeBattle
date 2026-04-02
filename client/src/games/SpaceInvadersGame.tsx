@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawStarfield } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PLAYER_W = 24, PLAYER_H = 16;
@@ -59,6 +60,7 @@ export default function SpaceInvadersGame() {
       canvas.width = W; canvas.height = H;
 
       drawBackground(c, 'space-invaders', W, H, { color: '#0a0a1a' });
+      drawStarfield(c, W, H, { density: 60 });
 
       // Divider
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
@@ -87,6 +89,15 @@ export default function SpaceInvadersGame() {
           c.fillStyle = '#00000044';
           c.fillRect(ix + 3, iy + 3, 4, 4);
           c.fillRect(ix + INVADER_W - 7, iy + 3, 4, 4);
+          // Antennae
+          c.strokeStyle = invColor;
+          c.lineWidth = 1;
+          c.beginPath();
+          c.moveTo(ix + 4, iy);
+          c.lineTo(ix + 2, iy - 4);
+          c.moveTo(ix + INVADER_W - 4, iy);
+          c.lineTo(ix + INVADER_W - 2, iy - 4);
+          c.stroke();
         }
 
         // Player

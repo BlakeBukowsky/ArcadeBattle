@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawStarfield, drawPlatformBlock, drawGlowCircle } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PW = 14, PH = 20, BOSS_W = 70, BOSS_H = 50, PROJ_R = 4, HALF_W = 400;
@@ -60,6 +61,7 @@ export default function BossBattleGame() {
       canvas.width = W; canvas.height = H;
 
       drawBackground(c, 'boss-battle', W, H, { color: '#0a0008' });
+      drawStarfield(c, W, H, { density: 50 });
 
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
       c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
@@ -79,7 +81,7 @@ export default function BossBattleGame() {
 
         // Platforms
         for (const plat of state.platforms) {
-          drawSprite(c, 'platform', ox + plat.x, plat.y, plat.w, 8, { color: '#444' });
+          drawPlatformBlock(c, ox + plat.x, plat.y, plat.w, 8, '#444');
         }
 
         // Boss
@@ -93,7 +95,7 @@ export default function BossBattleGame() {
 
         // Boss projectiles
         for (const proj of myProjs) {
-          drawSpriteCircle(c, 'bullet', ox + proj.x, proj.y, PROJ_R, { color: '#ff4488' });
+          drawGlowCircle(c, ox + proj.x, proj.y, PROJ_R, '#ff4488');
         }
 
         // Player bullets

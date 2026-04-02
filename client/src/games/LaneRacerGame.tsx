@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawSkyGradient } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const CAR_W = 30, CAR_H = 50, CAR_Y = 430;
@@ -49,6 +50,9 @@ export default function LaneRacerGame() {
       canvas.width = W; canvas.height = H;
 
       drawBackground(c, 'lane-racer', W, H, { color: '#1a1a1a' });
+
+      // Horizon sky gradient above road area
+      drawSkyGradient(c, W, H * 0.15, '#1a1a2e', '#1a1a1a');
 
       // Divider
       c.strokeStyle = '#444'; c.lineWidth = 2; c.setLineDash([6, 6]);

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
-import { drawSprite, drawSpriteCircle, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawShinySphere } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PLAYER_W = 40, PLAYER_H = 52, BALL_R = 12, NET_W = 6;
@@ -55,6 +56,13 @@ export default function VolleyballGame() {
 
       drawBackground(c, 'volleyball', W, H, { color: '#1a1a2e' });
 
+      // Arena lights
+      const lightGrad = c.createRadialGradient(W/2, 0, 0, W/2, 0, W*0.6);
+      lightGrad.addColorStop(0, '#ffffff08');
+      lightGrad.addColorStop(1, '#ffffff00');
+      c.fillStyle = lightGrad;
+      c.fillRect(0, 0, W, H);
+
       // Floor
       drawSprite(c, 'platform', 0, FLOOR_Y, W, H - FLOOR_Y, { color: '#2a4a3e' });
 
@@ -73,7 +81,7 @@ export default function VolleyballGame() {
       });
 
       // Ball
-      drawSpriteCircle(c, 'ball', state.ball.x, state.ball.y, BALL_R, { color: '#ffff00' });
+      drawShinySphere(c, state.ball.x, state.ball.y, BALL_R, '#ffff00');
       c.strokeStyle = '#cccc00'; c.lineWidth = 2;
       c.beginPath(); c.arc(state.ball.x, state.ball.y, BALL_R, 0, Math.PI * 2); c.stroke();
 

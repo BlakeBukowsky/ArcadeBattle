@@ -58,6 +58,16 @@ export default function BalanceGame() {
 
       drawBackground(c, 'balance', W, H, { color: '#0a0a1a' });
 
+      // Faint void grid
+      c.strokeStyle = '#ffffff04';
+      c.lineWidth = 1;
+      for (let gx = 0; gx < W; gx += 32) {
+        c.beginPath(); c.moveTo(gx, 0); c.lineTo(gx, H); c.stroke();
+      }
+      for (let gy = 0; gy < H; gy += 32) {
+        c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+      }
+
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
       c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
 

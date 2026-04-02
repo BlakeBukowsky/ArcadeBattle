@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSpriteCircle, drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawShinySphere } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PUCK_R = 12, MALLET_R = 20;
@@ -56,6 +57,16 @@ export default function AirHockeyGame() {
 
       drawBackground(c, 'air-hockey', W, H, { color: '#1a3a2e' });
 
+      // Table surface lines
+      c.strokeStyle = '#ffffff06';
+      c.lineWidth = 1;
+      for (let lx = 40; lx < W; lx += 40) {
+        c.beginPath(); c.moveTo(lx, 0); c.lineTo(lx, H); c.stroke();
+      }
+      for (let ly = 40; ly < H; ly += 40) {
+        c.beginPath(); c.moveTo(0, ly); c.lineTo(W, ly); c.stroke();
+      }
+
       // Center line + circle (procedural)
       c.setLineDash([6, 6]); c.strokeStyle = '#ffffff22'; c.lineWidth = 2;
       c.beginPath(); c.moveTo(W / 2, 0); c.lineTo(W / 2, H); c.stroke(); c.setLineDash([]);
@@ -66,7 +77,7 @@ export default function AirHockeyGame() {
       drawSprite(c, 'cover', W - 6, goalTop, 6, state.goalWidth, { color: '#ff444466' });
 
       // Puck
-      drawSpriteCircle(c, 'puck', state.puck.x, state.puck.y, PUCK_R, { color: '#ffffff' });
+      drawShinySphere(c, state.puck.x, state.puck.y, PUCK_R, '#ffffff');
 
       // Mallets
       const pids = Object.keys(state.mallets);

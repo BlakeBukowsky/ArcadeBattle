@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
+import { drawPlatformBlock } from '../lib/draw-helpers.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
 const PW = 14, PH = 18, HALF_W = 400;
@@ -59,6 +60,13 @@ export default function MountainClimberGame() {
 
       drawBackground(c, 'mountain-climber', W, H, { color: '#0a0a1a' });
 
+      // Depth gradient — lighter sky at top, darker cave depths at bottom
+      const caveGrad = c.createLinearGradient(0, 0, 0, H);
+      caveGrad.addColorStop(0, '#1a1a2a08');
+      caveGrad.addColorStop(1, '#00000000');
+      c.fillStyle = caveGrad;
+      c.fillRect(0, 0, W, H);
+
       c.strokeStyle = '#333'; c.lineWidth = 2; c.setLineDash([6, 6]);
       c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
 
@@ -85,7 +93,11 @@ export default function MountainClimberGame() {
         // Platforms
         for (const plat of level.platforms) {
           const color = plat.t === 'spike' ? '#ff4444' : plat.t === 'moving' ? '#4488ff' : '#666';
-          drawSprite(c, 'platform', plat.x, plat.y, plat.w, 8, { color });
+          if (plat.t === 'solid' || plat.t === 'moving') {
+            drawPlatformBlock(c, plat.x, plat.y, plat.w, 8, color);
+          } else {
+            drawSprite(c, 'platform', plat.x, plat.y, plat.w, 8, { color });
+          }
           if (plat.t === 'spike') {
             // Draw spikes as triangles
             for (let sx = plat.x; sx < plat.x + plat.w; sx += 10) {
