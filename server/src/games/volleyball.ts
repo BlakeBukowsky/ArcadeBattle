@@ -6,7 +6,7 @@ const NET_X = W / 2, NET_W = 6, NET_H = 140;
 const NET_TOP = FLOOR_Y - NET_H;
 const PLAYER_W = 40, PLAYER_H = 52;
 const BALL_R = 12;
-const GRAVITY = 0.25;
+const GRAVITY = 0.32;
 const JUMP_POWER = -9;
 const MOVE_SPEED = 5;
 const BALL_BOUNCE = 0.75;

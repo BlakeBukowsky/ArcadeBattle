@@ -6,8 +6,9 @@ const ACCEL = 0.12;
 const BRAKE = 0.06;
 const MAX_SPEED = 5;
 const TURN_SPEED = 0.04;
+const DRIFT_TURN_MULT = 1.8; // sharper turns while drifting
 const FRICTION = 0.98;
-const DRIFT_FRICTION = 0.92;
+const DRIFT_FRICTION = 0.985; // slightly less friction while drifting (maintains speed)
 const LAPS_TO_WIN = 3;
 const TICK_RATE = 1000 / 60;
 
@@ -106,13 +107,16 @@ export const racingGame: ServerGameModule = {
         if (inp.accel) car.speed = Math.min(MAX_SPEED, car.speed + ACCEL);
         if (inp.brake) car.speed = Math.max(-MAX_SPEED * 0.4, car.speed - BRAKE);
 
-        // Turning (scales with speed)
-        const turnAmount = TURN_SPEED * Math.min(1, Math.abs(car.speed) / 2);
+        // Drift
+        car.drifting = inp.drift && Math.abs(car.speed) > 1;
+
+        // Turning (scales with speed, sharper when drifting)
+        const turnMult = car.drifting ? DRIFT_TURN_MULT : 1;
+        const turnAmount = TURN_SPEED * turnMult * Math.min(1, Math.abs(car.speed) / 2);
         if (inp.left) car.angle -= turnAmount;
         if (inp.right) car.angle += turnAmount;
 
-        // Drift
-        car.drifting = inp.drift && Math.abs(car.speed) > 1;
+        // Friction (drifting maintains speed better)
         const fric = car.drifting ? DRIFT_FRICTION : FRICTION;
         car.speed *= fric;
 

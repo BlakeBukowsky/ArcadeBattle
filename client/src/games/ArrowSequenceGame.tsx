@@ -92,6 +92,12 @@ export default function ArrowSequenceGame() {
         c.save();
         c.beginPath(); c.rect(ox, 0, HALF, H); c.clip();
 
+        // Tint opponent side pink
+        if (!isMe) {
+          c.fillStyle = '#ff448808';
+          c.fillRect(ox, 0, HALF, H);
+        }
+
         if (isMe && showFlash) {
           c.fillStyle = flashRef.current.correct ? '#00ff8810' : '#ff448820';
           c.fillRect(ox, 0, HALF, H);
@@ -114,10 +120,11 @@ export default function ArrowSequenceGame() {
             const ax = seqX + arrowIdx * (ARROW_SIZE + ARROW_GAP) + ARROW_SIZE / 2;
             const ay = seqY + ARROW_SIZE / 2;
 
+            const doneColor = isMe ? '#00ff88' : '#ff4488';
             let color: string;
-            if (isDone || p.completed) color = '#00ff88';
+            if (isDone || p.completed) color = doneColor;
             else if (isCurrent) {
-              if (arrowIdx < p.inputIndex) color = '#00ff88';
+              if (arrowIdx < p.inputIndex) color = doneColor;
               else if (arrowIdx === p.inputIndex) color = '#ffffff';
               else color = '#444444';
             } else color = '#333333';

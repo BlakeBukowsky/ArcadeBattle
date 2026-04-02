@@ -17,13 +17,15 @@ import { tanksGame } from './tanks.js';
 import { laneRacerGame } from './lane-racer.js';
 import { asteroidsGame } from './asteroids.js';
 import { mountainClimberGame } from './mountain-climber.js';
-import { ninjaGame } from './ninja.js';
+// ninja removed for rework
+// import { ninjaGame } from './ninja.js';
 import { bossBattleGame } from './boss-battle.js';
 import { spaceBossGame } from './space-boss.js';
 import { spelunkyGame } from './spelunky.js';
 import { racingGame } from './racing.js';
 import { balanceGame } from './balance.js';
-import { cityscapeGame } from './cityscape.js';
+// cityscape removed for rework
+// import { cityscapeGame } from './cityscape.js';
 import { quiltGame } from './quilt.js';
 import { wordGuessGame } from './word-guess.js';
 import { roundsGame } from './rounds.js';
@@ -84,13 +86,13 @@ gameRegistry.register(tanksGame);
 gameRegistry.register(laneRacerGame);
 gameRegistry.register(asteroidsGame);
 gameRegistry.register(mountainClimberGame);
-gameRegistry.register(ninjaGame);
+// gameRegistry.register(ninjaGame);
 gameRegistry.register(bossBattleGame);
 gameRegistry.register(spaceBossGame);
 gameRegistry.register(spelunkyGame);
 gameRegistry.register(racingGame);
 gameRegistry.register(balanceGame);
-gameRegistry.register(cityscapeGame);
+// gameRegistry.register(cityscapeGame);
 gameRegistry.register(quiltGame);
 gameRegistry.register(wordGuessGame);
 gameRegistry.register(roundsGame);
@@ -148,7 +150,6 @@ gameRegistry.registerSet({
     'rounds',
     'word-guess',
     'control-panel',
-    'cityscape',
     'spelunky',
   ],
 });
@@ -172,13 +173,11 @@ gameRegistry.registerSet({
     'lane-racer',
     'asteroids',
     'mountain-climber',
-    'ninja',
     'boss-battle',
     'space-boss',
     'spelunky',
     'racing',
     'balance',
-    'cityscape',
     'word-guess',
     'rounds',
   ],

@@ -139,6 +139,10 @@ io.on('connection', (socket) => {
     matchManager.handleGameInput(userId, data);
   });
 
+  socket.on('game:resync', () => {
+    matchManager.resyncPlayer(userId, socket.id);
+  });
+
   socket.on('match:playAgain', () => {
     const lobbyId = lobbyManager.getPlayerLobby(userId);
     if (!lobbyId) return;

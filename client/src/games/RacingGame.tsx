@@ -117,21 +117,21 @@ export default function RacingGame() {
         c.translate(car.x, car.y);
         c.rotate(car.angle);
 
-        // Car body
+        // Car body — long axis (CAR_H) points in movement direction (positive X after rotation)
         c.fillStyle = color;
-        c.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
-        // Windshield
+        c.fillRect(-CAR_H / 2, -CAR_W / 2, CAR_H, CAR_W);
+        // Windshield (at front = positive X)
         c.fillStyle = '#ffffff33';
-        c.fillRect(-CAR_W / 2 + 2, -CAR_H / 2 + 3, CAR_W - 4, 5);
-        // Rear
+        c.fillRect(CAR_H / 2 - 7, -CAR_W / 2 + 2, 5, CAR_W - 4);
+        // Rear (at back = negative X)
         c.fillStyle = '#00000033';
-        c.fillRect(-CAR_W / 2 + 1, CAR_H / 2 - 4, CAR_W - 2, 3);
+        c.fillRect(-CAR_H / 2 + 1, -CAR_W / 2 + 1, 3, CAR_W - 2);
 
-        // Drift sparks
+        // Drift sparks (at rear corners)
         if (car.drifting) {
           c.fillStyle = '#ffaa0066';
-          c.fillRect(-CAR_W / 2 - 3, CAR_H / 2, 3, 3);
-          c.fillRect(CAR_W / 2, CAR_H / 2, 3, 3);
+          c.fillRect(-CAR_H / 2 - 3, -CAR_W / 2 - 2, 4, 3);
+          c.fillRect(-CAR_H / 2 - 3, CAR_W / 2 - 1, 4, 3);
         }
 
         c.restore();
