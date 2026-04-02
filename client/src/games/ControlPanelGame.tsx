@@ -15,7 +15,7 @@ interface ControlPanelState {
   canvasWidth: number; canvasHeight: number; winner: string | null;
 }
 
-const CTRL_W = 80, CTRL_H = 60, CTRL_GAP = 8, COLS = 4;
+const CTRL_W = 65, CTRL_H = 60, CTRL_GAP = 6, COLS = 5;
 
 export default function ControlPanelGame() {
   const socket = useSocket();

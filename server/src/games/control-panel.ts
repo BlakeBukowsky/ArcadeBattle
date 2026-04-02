@@ -53,27 +53,46 @@ function generatePanel(): Control[] {
   const shuffKnb = [...KNOB_NAMES].sort(() => Math.random() - 0.5);
   let bI = 0, lI = 0, sI = 0, kI = 0;
 
-  // 3 rows x 4 cols = 12 controls, mix of types
-  const layout: ControlType[] = [
-    'button','slider','knob','button',
-    'lever','button','slider','lever',
-    'knob','button','lever','slider',
+  // Grid: 3 rows x 5 cols. Sliders take 2 cols, everything else takes 1.
+  // We fill each row left-to-right, placing sliders only when there's room for 2.
+  const GRID_COLS = 5, GRID_ROWS = 3;
+  const occupied: boolean[][] = [];
+  for (let r = 0; r < GRID_ROWS; r++) occupied.push(new Array(GRID_COLS).fill(false));
+
+  // Decide how many of each type: 2 sliders, 2 knobs, rest are buttons/levers
+  const typePlan: ControlType[] = [
+    'slider', 'slider',
+    'knob', 'knob',
+    'button', 'button', 'button', 'button',
+    'lever', 'lever', 'lever',
   ];
-  // Shuffle layout
-  layout.sort(() => Math.random() - 0.5);
+  typePlan.sort(() => Math.random() - 0.5);
 
-  for (let i = 0; i < 12; i++) {
-    const row = Math.floor(i / 4);
-    const col = i % 4;
-    const type = layout[i];
+  for (const type of typePlan) {
+    // Find a valid slot
+    const width = type === 'slider' ? 2 : 1;
+    const candidates: { row: number; col: number }[] = [];
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c <= GRID_COLS - width; c++) {
+        let fits = true;
+        for (let dc = 0; dc < width; dc++) {
+          if (occupied[r][c + dc]) { fits = false; break; }
+        }
+        if (fits) candidates.push({ row: r, col: c });
+      }
+    }
+    if (candidates.length === 0) continue; // skip if no room (shouldn't happen)
+
+    const slot = candidates[Math.floor(Math.random() * candidates.length)];
+    for (let dc = 0; dc < width; dc++) occupied[slot.row][slot.col + dc] = true;
+
     let name: string;
+    if (type === 'button') name = shuffBtn[bI++] ?? `btn${controls.length}`;
+    else if (type === 'lever') name = shuffLev[lI++] ?? `lev${controls.length}`;
+    else if (type === 'slider') name = shuffSld[sI++] ?? `sld${controls.length}`;
+    else name = shuffKnb[kI++] ?? `knb${controls.length}`;
 
-    if (type === 'button') name = shuffBtn[bI++] ?? `btn${i}`;
-    else if (type === 'lever') name = shuffLev[lI++] ?? `lev${i}`;
-    else if (type === 'slider') name = shuffSld[sI++] ?? `sld${i}`;
-    else name = shuffKnb[kI++] ?? `knb${i}`;
-
-    const ctrl: Control = { id: `${row}-${col}`, name, type, row, col };
+    const ctrl: Control = { id: `${slot.row}-${slot.col}`, name, type, row: slot.row, col: slot.col };
     if (type === 'slider') ctrl.sliderMax = 9;
     if (type === 'knob') ctrl.knobOptions = KNOB_OPTIONS[kI % KNOB_OPTIONS.length];
 

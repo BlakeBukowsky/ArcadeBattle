@@ -76,14 +76,13 @@ export function drawEnemyBody(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
   color: string,
-  facing: -1 | 1 = 1,
+  _facing: -1 | 1 = 1,
   opts?: { alpha?: number },
 ): void {
   ctx.save();
   if (opts?.alpha !== undefined) ctx.globalAlpha = opts.alpha;
 
   const headH = h * 0.3;
-  const bodyH = h - headH;
 
   // Body — slightly wider at bottom for menacing stance
   ctx.fillStyle = color;
