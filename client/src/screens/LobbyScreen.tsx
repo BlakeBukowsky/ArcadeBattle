@@ -103,17 +103,21 @@ export default function LobbyScreen() {
             <span className="slider-value">{lobbyState.config.pointsToWin}</span>
           </div>
         </div>
-        <div className="config-row">
+        <div className="config-row config-row-vertical">
           <label>Game Set</label>
-          <div className="config-options">
-            {['all', 'basic'].map((setId) => (
+          <div className="game-set-options">
+            {[
+              { id: 'basic', name: 'Basic', desc: 'Simple, self-explanatory games — great for first-timers' },
+              { id: 'all', name: 'All Games', desc: 'Every game including complex ones with unique controls' },
+            ].map((set) => (
               <button
-                key={setId}
-                className={`config-set-btn ${lobbyState.config.gameSetId === setId ? 'active' : ''}`}
-                onClick={() => socket.emit('lobby:config', { gameSetId: setId })}
+                key={set.id}
+                className={`game-set-btn ${lobbyState.config.gameSetId === set.id ? 'active' : ''}`}
+                onClick={() => socket.emit('lobby:config', { gameSetId: set.id })}
                 disabled={!isHost}
               >
-                {setId === 'all' ? 'All' : 'Basic'}
+                <span className="game-set-name">{set.name}</span>
+                <span className="game-set-desc">{set.desc}</span>
               </button>
             ))}
           </div>

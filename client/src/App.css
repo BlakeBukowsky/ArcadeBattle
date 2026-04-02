@@ -353,31 +353,59 @@
   gap: 0.4rem;
 }
 
-.config-set-btn {
-  padding: 0.3rem 0.8rem;
-  border: 1px solid #444;
+.config-row-vertical {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.game-set-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.game-set-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #333;
   border-radius: 6px;
   background: #0a0a1a;
-  color: #aaa;
-  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.15s;
+  text-align: left;
 }
 
-.config-set-btn:hover:not(:disabled) {
+.game-set-btn:hover:not(:disabled) {
   border-color: #00ff88;
-  color: #fff;
 }
 
-.config-set-btn.active {
+.game-set-btn.active {
   border-color: #00ff88;
-  background: #00ff8822;
+  background: #00ff8812;
+}
+
+.game-set-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.game-set-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.game-set-btn.active .game-set-name {
   color: #00ff88;
 }
 
-.config-set-btn:disabled {
-  cursor: default;
-  opacity: 0.7;
+.game-set-desc {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.15rem;
 }
 
 .config-note {

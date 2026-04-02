@@ -6,4 +6,4 @@ export const LOBBY_COUNTDOWN_SECONDS = 5;
 export const TRANSITION_SECONDS = 4;
 export const RECONNECT_TIMEOUT_SECONDS = 15;
 
-export const DEFAULT_GAME_SET_ID = 'all';
+export const DEFAULT_GAME_SET_ID = 'basic';
