@@ -4,10 +4,10 @@ const W = 800, H = 500;
 const PW = 16, PH = 22;
 const GRAVITY = 0.4;
 const MOVE_SPEED = 3.5;
-const JUMP_POWER = -9;
+const JUMP_POWER = -10.5;
 const BULLET_SPEED = 8;
 const BULLET_R = 4;
-const FIRE_COOLDOWN = 400;
+const FIRE_COOLDOWN = 600;
 const MAX_BOUNCES = 1;
 const ROUNDS_TO_WIN = 3;
 const IFRAME_DURATION = 1000;
@@ -20,48 +20,66 @@ interface Bullet { x: number; y: number; vx: number; vy: number; owner: string; 
 const FLOOR: Plat = { x: 0, y: H - 20, w: W };
 
 const MAPS: Plat[][] = [
-  // Map 0: Simple platforms
+  // Map 0: Arena — open with high ground
   [FLOOR,
-    { x: 200, y: 350, w: 120 },
-    { x: 480, y: 350, w: 120 },
-    { x: 340, y: 250, w: 120 },
-    { x: 100, y: 200, w: 80 },
-    { x: W - 180, y: 200, w: 80 },
+    { x: 180, y: 370, w: 100 },
+    { x: W - 280, y: 370, w: 100 },
+    { x: 320, y: 280, w: 160 },
+    { x: 80, y: 200, w: 90 },
+    { x: W - 170, y: 200, w: 90 },
+    { x: 350, y: 140, w: 100 },
   ],
-  // Map 1: Towers
+  // Map 1: Pillars — vertical play with gaps
   [FLOOR,
-    { x: 150, y: 380, w: 60 },
-    { x: 150, y: 280, w: 60 },
-    { x: 150, y: 180, w: 60 },
-    { x: W - 210, y: 380, w: 60 },
-    { x: W - 210, y: 280, w: 60 },
-    { x: W - 210, y: 180, w: 60 },
-    { x: 340, y: 320, w: 120 },
+    { x: 130, y: 380, w: 70 },
+    { x: 130, y: 260, w: 70 },
+    { x: W - 200, y: 380, w: 70 },
+    { x: W - 200, y: 260, w: 70 },
+    { x: 350, y: 330, w: 100 },
+    { x: 350, y: 180, w: 100 },
+    { x: 250, y: 100, w: 60 },
+    { x: W - 310, y: 100, w: 60 },
   ],
-  // Map 2: Staircase
+  // Map 2: Zigzag — ascending platforms
   [FLOOR,
-    { x: 50, y: 400, w: 100 },
-    { x: 180, y: 340, w: 100 },
-    { x: 310, y: 280, w: 100 },
-    { x: 440, y: 220, w: 100 },
-    { x: 570, y: 280, w: 100 },
-    { x: 650, y: 380, w: 100 },
+    { x: 60, y: 390, w: 90 },
+    { x: 220, y: 330, w: 90 },
+    { x: 400, y: 270, w: 90 },
+    { x: 560, y: 330, w: 90 },
+    { x: 700, y: 390, w: 80 },
+    { x: 300, y: 170, w: 80 },
+    { x: 500, y: 170, w: 80 },
   ],
-  // Map 3: Floating
+  // Map 3: Bunker — two shelves with ground cover
   [FLOOR,
-    { x: 100, y: 350, w: 80 },
-    { x: 300, y: 300, w: 80 },
-    { x: 500, y: 250, w: 80 },
-    { x: 200, y: 180, w: 100 },
-    { x: 450, y: 380, w: 100 },
-    { x: W - 150, y: 320, w: 80 },
+    { x: 0, y: 340, w: 250 },
+    { x: W - 250, y: 340, w: 250 },
+    { x: 300, y: 220, w: 200 },
+    { x: 100, y: 160, w: 80 },
+    { x: W - 180, y: 160, w: 80 },
   ],
-  // Map 4: Bridge
+  // Map 4: Chaos — scattered small platforms
   [FLOOR,
-    { x: 200, y: 250, w: 400 },
-    { x: 50, y: 350, w: 100 },
-    { x: W - 150, y: 350, w: 100 },
-    { x: 350, y: 150, w: 100 },
+    { x: 80, y: 400, w: 60 },
+    { x: 200, y: 350, w: 60 },
+    { x: 340, y: 300, w: 60 },
+    { x: 480, y: 350, w: 60 },
+    { x: 620, y: 400, w: 60 },
+    { x: 140, y: 230, w: 70 },
+    { x: 400, y: 180, w: 70 },
+    { x: 600, y: 250, w: 70 },
+    { x: 350, y: 100, w: 100 },
+  ],
+  // Map 5: Pit — no floor, just platforms
+  [
+    { x: 50, y: 420, w: 120 },
+    { x: W - 170, y: 420, w: 120 },
+    { x: 200, y: 340, w: 100 },
+    { x: W - 300, y: 340, w: 100 },
+    { x: 320, y: 250, w: 160 },
+    { x: 100, y: 170, w: 80 },
+    { x: W - 180, y: 170, w: 80 },
+    { x: 350, y: 100, w: 100 },
   ],
 ];
 
