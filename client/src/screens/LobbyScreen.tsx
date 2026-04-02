@@ -108,8 +108,8 @@ export default function LobbyScreen() {
           <div className="game-set-options">
             {[
               { id: 'basic', name: 'Basic', desc: 'Simple, self-explanatory games — great for first-timers' },
-              { id: 'standard', name: 'Standard', desc: 'All straightforward games — skips bullet hells and puzzles' },
-              { id: 'all', name: 'All Games', desc: 'Everything including complex platformers, bullet hells, and puzzles' },
+              { id: 'standard', name: 'Standard', desc: 'The standard way to play — complicated and finicky games removed' },
+              { id: 'all', name: 'All Games', desc: 'All games' },
             ].map((set) => (
               <button
                 key={set.id}
