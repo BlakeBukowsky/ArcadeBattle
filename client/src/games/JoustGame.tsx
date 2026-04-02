@@ -6,7 +6,7 @@ import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 const PLAYER_W = 24, PLAYER_H = 28;
 
 interface Platform { x: number; y: number; w: number; }
-interface PlayerState { x: number; y: number; vx: number; alive: boolean; }
+interface PlayerState { x: number; y: number; vx: number; alive: boolean; iframeUntil: number; }
 interface JoustState {
   players: Record<string, PlayerState>;
   scores: Record<string, number>;
@@ -71,6 +71,10 @@ export default function JoustGame() {
         if (!p.alive) return;
         const isMe = pid === myId;
         const color = isMe ? '#00ff88' : '#ff4488';
+        const hasIframes = p.iframeUntil > Date.now();
+
+        // Flash during iframes
+        if (hasIframes) c.globalAlpha = Math.sin(Date.now() * 0.015) * 0.3 + 0.7;
 
         drawSprite(c, isMe ? 'player' : 'opponent', p.x, p.y, PLAYER_W, PLAYER_H, {
           color,
@@ -85,6 +89,8 @@ export default function JoustGame() {
           p.y + PLAYER_H / 2 - 2,
           10, 4
         );
+
+        if (hasIframes) c.globalAlpha = 1;
 
         drawLabel(c, isMe ? 'YOU' : 'OPP', p.x + PLAYER_W / 2, p.y - 4);
       });

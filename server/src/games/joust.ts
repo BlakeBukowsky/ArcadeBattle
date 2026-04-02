@@ -8,6 +8,7 @@ const MOVE_SPEED = 4;
 const POINTS_TO_WIN = 3;
 const TICK_RATE = 1000 / 60;
 const RESPAWN_DELAY = 1000;
+const IFRAME_DURATION = 1500; // ms of invincibility after respawn
 const FLOOR_Y = H - 30;
 
 interface Platform { x: number; y: number; w: number; }
@@ -28,6 +29,7 @@ const PLATFORMS: Platform[] = [
 interface PlayerState {
   x: number; y: number; vx: number; vy: number;
   alive: boolean;
+  iframeUntil: number; // timestamp when iframes expire
 }
 
 interface JoustState {
@@ -56,8 +58,8 @@ export const joustGame: ServerGameModule = {
 
     const state: JoustState = {
       players: {
-        [p1]: { x: 120, y: PLATFORMS[1].y - PLAYER_H, vx: 0, vy: 0, alive: true },
-        [p2]: { x: W - 120 - PLAYER_W, y: PLATFORMS[2].y - PLAYER_H, vx: 0, vy: 0, alive: true },
+        [p1]: { x: 120, y: PLATFORMS[1].y - PLAYER_H, vx: 0, vy: 0, alive: true, iframeUntil: 0 },
+        [p2]: { x: W - 120 - PLAYER_W, y: PLATFORMS[2].y - PLAYER_H, vx: 0, vy: 0, alive: true, iframeUntil: 0 },
       },
       scores: { [p1]: 0, [p2]: 0 },
       platforms: PLATFORMS,
@@ -73,6 +75,7 @@ export const joustGame: ServerGameModule = {
       p.vx = 0;
       p.vy = 0;
       p.alive = true;
+      p.iframeUntil = Date.now() + IFRAME_DURATION;
     }
 
     function checkPlatformCollision(p: PlayerState): void {
@@ -123,10 +126,11 @@ export const joustGame: ServerGameModule = {
         // (vertical wrapping handles top/bottom)
       }
 
-      // Player collision
+      // Player collision (skip if either has iframes)
+      const now = Date.now();
       const a = state.players[p1];
       const b = state.players[p2];
-      if (a.alive && b.alive) {
+      if (a.alive && b.alive && now >= a.iframeUntil && now >= b.iframeUntil) {
         const dx = (a.x + PLAYER_W / 2) - (b.x + PLAYER_W / 2);
         const dy = (a.y + PLAYER_H / 2) - (b.y + PLAYER_H / 2);
         const dist = Math.sqrt(dx * dx + dy * dy);

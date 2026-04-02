@@ -129,15 +129,20 @@ export default function CowboyShootoutGame() {
         c.strokeStyle = proj.fromBandit ? '#ff664444' : '#ffff0044'; c.lineWidth = 2; c.stroke();
       }
 
-      // Crosshair
-      const me = state.players[myId];
-      if (me && me.peeking && !me.stunned) {
-        c.strokeStyle = '#ff000088'; c.lineWidth = 1;
+      // Crosshairs — both players
+      const allPids = Object.keys(state.players);
+      for (const pid of allPids) {
+        const p = state.players[pid];
+        if (!p.peeking || p.stunned) continue;
+        const isMe = pid === myId;
+        const cursorColor = isMe ? '#ff000088' : '#ff448866';
+        const size = isMe ? 12 : 8;
+        c.strokeStyle = cursorColor; c.lineWidth = isMe ? 1 : 1;
         c.beginPath();
-        c.moveTo(me.cursorX - 12, me.cursorY); c.lineTo(me.cursorX + 12, me.cursorY);
-        c.moveTo(me.cursorX, me.cursorY - 12); c.lineTo(me.cursorX, me.cursorY + 12);
+        c.moveTo(p.cursorX - size, p.cursorY); c.lineTo(p.cursorX + size, p.cursorY);
+        c.moveTo(p.cursorX, p.cursorY - size); c.lineTo(p.cursorX, p.cursorY + size);
         c.stroke();
-        c.beginPath(); c.arc(me.cursorX, me.cursorY, 7, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.arc(p.cursorX, p.cursorY, isMe ? 7 : 5, 0, Math.PI * 2); c.stroke();
       }
 
       // Timer

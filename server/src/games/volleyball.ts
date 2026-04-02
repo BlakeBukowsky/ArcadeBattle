@@ -10,8 +10,8 @@ const GRAVITY = 0.25;
 const JUMP_POWER = -9;
 const MOVE_SPEED = 5;
 const BALL_BOUNCE = 0.75;
-const PLAYER_BOUNCE = 5;
-const BALL_ACCEL = 0.0003; // ball speeds up over time
+const PLAYER_BOUNCE = 3.5;
+const BALL_ACCEL = 0.0002; // ball speeds up over time
 const POINTS_TO_WIN = 5;
 const TICK_RATE = 1000 / 60;
 const SERVE_DELAY = 800;
@@ -74,12 +74,12 @@ export const volleyballGame: ServerGameModule = {
     let rallyTicks = 0;
 
     const interval = setInterval(() => {
-      if (!running || state.paused) {
+      if (!running) {
         ctx.emit('game:state', state);
         return;
       }
 
-      // Update players
+      // Update players (always, even during pause)
       for (const pid of ctx.players) {
         const p = state.players[pid];
         const inp = inputs[pid];
@@ -109,6 +109,8 @@ export const volleyballGame: ServerGameModule = {
           p.x = Math.max(NET_X + NET_W / 2, Math.min(W - PLAYER_W, p.x));
         }
       }
+
+      if (state.paused) { ctx.emit('game:state', state); return; }
 
       // Ball physics — accelerate over rally duration
       rallyTicks++;

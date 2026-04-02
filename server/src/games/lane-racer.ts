@@ -8,8 +8,8 @@ const CAR_W = 30, CAR_H = 50;
 const CAR_Y = H - CAR_H - 20;
 const BASE_SPEED = 3;
 const SPEED_INCREASE = 0.004;
-const SPAWN_INTERVAL_START = 50; // ticks
-const SPAWN_INTERVAL_MIN = 18;
+const SPAWN_INTERVAL_START = 70; // ticks
+const SPAWN_INTERVAL_MIN = 28;
 const OBSTACLE_W = 40, OBSTACLE_H = 40;
 const TICK_RATE = 1000 / 60;
 

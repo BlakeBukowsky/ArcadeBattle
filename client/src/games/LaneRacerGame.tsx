@@ -75,7 +75,7 @@ export default function LaneRacerGame() {
         // Lane dividers (scrolling dashes — moving downward like the road)
         c.strokeStyle = '#555'; c.lineWidth = 2;
         c.setLineDash([20, 20]);
-        c.lineDashOffset = -(scrollY % 40);
+        c.lineDashOffset = (scrollY % 40);
         for (let i = 1; i < LANES; i++) {
           const lx = ox + i * laneW;
           c.beginPath();
