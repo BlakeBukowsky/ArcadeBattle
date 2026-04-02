@@ -105,7 +105,18 @@ export default function LobbyScreen() {
         </div>
         <div className="config-row">
           <label>Game Set</label>
-          <span className="config-value">All Games</span>
+          <div className="config-options">
+            {['all', 'basic'].map((setId) => (
+              <button
+                key={setId}
+                className={`config-set-btn ${lobbyState.config.gameSetId === setId ? 'active' : ''}`}
+                onClick={() => socket.emit('lobby:config', { gameSetId: setId })}
+                disabled={!isHost}
+              >
+                {setId === 'all' ? 'All' : 'Basic'}
+              </button>
+            ))}
+          </div>
         </div>
         {!isHost && <p className="config-note">Only the host can change settings</p>}
       </div>

@@ -19,6 +19,14 @@ import { asteroidsGame } from './asteroids.js';
 import { mountainClimberGame } from './mountain-climber.js';
 import { ninjaGame } from './ninja.js';
 import { bossBattleGame } from './boss-battle.js';
+import { spaceBossGame } from './space-boss.js';
+import { spelunkyGame } from './spelunky.js';
+import { racingGame } from './racing.js';
+import { balanceGame } from './balance.js';
+import { cityscapeGame } from './cityscape.js';
+import { quiltGame } from './quilt.js';
+import { wordGuessGame } from './word-guess.js';
+import { roundsGame } from './rounds.js';
 
 class GameRegistry {
   private games = new Map<string, ServerGameModule>();
@@ -77,6 +85,14 @@ gameRegistry.register(asteroidsGame);
 gameRegistry.register(mountainClimberGame);
 gameRegistry.register(ninjaGame);
 gameRegistry.register(bossBattleGame);
+gameRegistry.register(spaceBossGame);
+gameRegistry.register(spelunkyGame);
+gameRegistry.register(racingGame);
+gameRegistry.register(balanceGame);
+gameRegistry.register(cityscapeGame);
+gameRegistry.register(quiltGame);
+gameRegistry.register(wordGuessGame);
+gameRegistry.register(roundsGame);
 
 // Register game sets
 gameRegistry.registerSet({
@@ -84,4 +100,22 @@ gameRegistry.registerSet({
   name: 'All Games',
   description: 'All available mini-games',
   gameIds: [],
+});
+
+gameRegistry.registerSet({
+  id: 'basic',
+  name: 'Basic',
+  description: 'Simple, self-explanatory games with no learning curve',
+  gameIds: [
+    'pong',
+    'aim-trainer',
+    'volleyball',
+    'asteroid-dodge',
+    'flappy-race',
+    'lane-racer',
+    'arrow-sequence',
+    'typing-race',
+    'memory-arrows',
+    'balance',
+  ],
 });

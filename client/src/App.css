@@ -348,6 +348,38 @@
   color: #888;
 }
 
+.config-options {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.config-set-btn {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #0a0a1a;
+  color: #aaa;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.config-set-btn:hover:not(:disabled) {
+  border-color: #00ff88;
+  color: #fff;
+}
+
+.config-set-btn.active {
+  border-color: #00ff88;
+  background: #00ff8822;
+  color: #00ff88;
+}
+
+.config-set-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
 .config-note {
   font-size: 0.8rem;
   color: #666;

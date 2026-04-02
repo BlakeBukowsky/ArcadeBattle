@@ -18,6 +18,14 @@ import AsteroidsGame from './AsteroidsGame.tsx';
 import MountainClimberGame from './MountainClimberGame.tsx';
 import NinjaGame from './NinjaGame.tsx';
 import BossBattleGame from './BossBattleGame.tsx';
+import SpaceBossGame from './SpaceBossGame.tsx';
+import SpelunkyGame from './SpelunkyGame.tsx';
+import RacingGame from './RacingGame.tsx';
+import BalanceGame from './BalanceGame.tsx';
+import CityscapeGame from './CityscapeGame.tsx';
+import QuiltGame from './QuiltGame.tsx';
+import WordGuessGame from './WordGuessGame.tsx';
+import RoundsGame from './RoundsGame.tsx';
 
 export const gameComponents: Record<string, ComponentType> = {
   'pong': PongGame,
@@ -39,4 +47,12 @@ export const gameComponents: Record<string, ComponentType> = {
   'mountain-climber': MountainClimberGame,
   'ninja': NinjaGame,
   'boss-battle': BossBattleGame,
+  'space-boss': SpaceBossGame,
+  'spelunky': SpelunkyGame,
+  'racing': RacingGame,
+  'balance': BalanceGame,
+  'cityscape': CityscapeGame,
+  'quilt': QuiltGame,
+  'word-guess': WordGuessGame,
+  'rounds': RoundsGame,
 };
