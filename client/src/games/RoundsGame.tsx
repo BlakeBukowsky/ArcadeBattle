@@ -32,7 +32,7 @@ export default function RoundsGame() {
     function kd(e: KeyboardEvent) {
       if (e.key === 'a' || e.key === 'ArrowLeft') socket.emit('game:input', { left: true });
       if (e.key === 'd' || e.key === 'ArrowRight') socket.emit('game:input', { right: true });
-      if (e.key === 'w' || e.key === 'ArrowUp') { e.preventDefault(); socket.emit('game:input', { jump: true }); }
+      if (e.key === 'w' || e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); socket.emit('game:input', { jump: true }); }
     }
     function ku(e: KeyboardEvent) {
       if (e.key === 'a' || e.key === 'ArrowLeft') socket.emit('game:input', { left: false });

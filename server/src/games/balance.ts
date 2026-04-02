@@ -2,10 +2,10 @@ import type { ServerGameModule, MatchContext, GameInstance } from '@arcade-battl
 
 const W = 800, H = 500, HALF_W = 400;
 const GRID = 16;
-const PATH_W = 3; // path width in tiles (thick path)
-const COLS = 40, ROWS = 30; // large map
-const PW = 10, PH = 10;
-const MOVE_SPEED = 2;
+const PATH_W = 1; // 1 tile wide
+const COLS = 45, ROWS = 30;
+const PW = 8, PH = 8;
+const MOVE_SPEED = 1.8;
 const FALL_DELAY = 60;
 const VIEW_RADIUS = 5; // tiles visible around player (fog of war)
 const TICK_RATE = 1000 / 60;
@@ -14,47 +14,43 @@ function generatePath(): { grid: boolean[][]; startR: number; endR: number; endC
   const grid: boolean[][] = [];
   for (let r = 0; r < ROWS; r++) grid.push(new Array(COLS).fill(false));
 
-  // Generate a winding thick path from left to right
+  // Generate a winding 1-tile-wide path from left to right
   let row = Math.floor(ROWS / 2);
   let col = 0;
   const startR = row;
 
-  // Place thick starting platform
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = 0; dc < 3; dc++) {
-      const r = row + dr, c = col + dc;
-      if (r >= 0 && r < ROWS) grid[r][c] = true;
-    }
-  }
-  col = 3;
+  // Starting pad (small)
+  grid[row][0] = true;
+  grid[row][1] = true;
+  col = 2;
 
-  while (col < COLS - 3) {
-    // Place thick path segment
-    for (let dr = -(PATH_W >> 1); dr <= (PATH_W >> 1); dr++) {
-      const r = row + dr;
-      if (r >= 0 && r < ROWS) grid[r][col] = true;
-    }
+  while (col < COLS - 2) {
+    grid[row][col] = true;
 
-    // Decide next direction
+    // Windier path: favor vertical movement, with mandatory right progress
     const roll = Math.random();
-    if (roll < 0.55) {
+    if (roll < 0.35) {
       col++; // right
-    } else if (roll < 0.75 && row > PATH_W + 1) {
-      row--; // up
-    } else if (roll < 0.95 && row < ROWS - PATH_W - 1) {
+    } else if (roll < 0.55 && row > 2) {
+      row--; // up (more likely than before)
+    } else if (roll < 0.75 && row < ROWS - 3) {
       row++; // down
+    } else if (roll < 0.85 && row > 2) {
+      // Double up
+      row--; grid[row][col] = true; row--;
+    } else if (roll < 0.95 && row < ROWS - 3) {
+      // Double down
+      row++; grid[row][col] = true; row++;
     } else {
       col++; // right fallback
     }
+
+    // Ensure we make rightward progress every few steps
+    if (col < COLS - 3 && Math.random() < 0.15) col++;
   }
 
-  // Place thick ending platform
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -2; dc <= 0; dc++) {
-      const r = row + dr, c = COLS - 1 + dc;
-      if (r >= 0 && r < ROWS && c >= 0) grid[r][c] = true;
-    }
-  }
+  // End tile
+  grid[row][COLS - 2] = true;
 
   return { grid, startR, endR: row, endC: COLS - 2 };
 }

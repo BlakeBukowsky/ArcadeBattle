@@ -18,6 +18,7 @@ export default function AirHockeyGame() {
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const interpRef = useRef(new StateBuffer<AirHockeyState>()).current;
+  const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
@@ -32,10 +33,10 @@ export default function AirHockeyGame() {
       const now = Date.now(); if (now - last < 16) return; last = now;
       const rect = canvas!.getBoundingClientRect();
       const state = interpRef.interpolate(); if (!state) return;
-      socket.emit('game:input', {
-        x: (e.clientX - rect.left) * (state.canvasWidth / rect.width),
-        y: (e.clientY - rect.top) * (state.canvasHeight / rect.height),
-      });
+      const mx = (e.clientX - rect.left) * (state.canvasWidth / rect.width);
+      const my = (e.clientY - rect.top) * (state.canvasHeight / rect.height);
+      mouseRef.current = { x: mx, y: my };
+      socket.emit('game:input', { x: mx, y: my });
     }
     canvas.addEventListener('mousemove', onMove);
     return () => canvas.removeEventListener('mousemove', onMove);
@@ -79,6 +80,23 @@ export default function AirHockeyGame() {
         c.beginPath(); c.arc(m.x, m.y, MALLET_R * 0.4, 0, Math.PI * 2);
         c.fillStyle = '#ffffff44'; c.fill();
       });
+
+      // Show cursor position when mouse is on opponent's side
+      const mouse = mouseRef.current;
+      const myMallet = state.mallets[myId];
+      if (myMallet) {
+        const myIsLeft = Object.keys(state.mallets).indexOf(myId) === 0;
+        const onMySide = myIsLeft ? mouse.x < W / 2 : mouse.x > W / 2;
+        if (!onMySide) {
+          // Draw a small crosshair to show where mouse is
+          c.strokeStyle = '#00ff8844';
+          c.lineWidth = 1;
+          c.beginPath();
+          c.moveTo(mouse.x - 8, mouse.y); c.lineTo(mouse.x + 8, mouse.y);
+          c.moveTo(mouse.x, mouse.y - 8); c.lineTo(mouse.x, mouse.y + 8);
+          c.stroke();
+        }
+      }
 
       // Scores
       pids.forEach((pid, i) => {

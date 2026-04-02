@@ -32,6 +32,7 @@ export default function QuiltGame() {
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const interpRef = useRef(new StateBuffer<QuiltState>()).current;
+  const hoverRef = useRef<{ col: number; row: number } | null>(null);
 
   useEffect(() => {
     socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
@@ -102,11 +103,33 @@ export default function QuiltGame() {
       }
     }
 
+    function onMove(e: MouseEvent) {
+      const rect = canvas!.getBoundingClientRect();
+      const state = interpRef.latest(); if (!state) return;
+      const W = state.canvasWidth, HALF = W / 2;
+      const mx = (e.clientX - rect.left) * (W / rect.width);
+      const my = (e.clientY - rect.top) * (state.canvasHeight / rect.height);
+      const pids = Object.keys(state.players);
+      const myIdx = pids.indexOf(myId);
+      const ox = myIdx * HALF;
+      const gridOx = ox + 10, gridOy = 50;
+      const p = state.players[myId]; if (!p) return;
+      const quilt = state.quilts[p.currentQuilt]; if (!quilt) return;
+      const col = Math.floor((mx - gridOx) / CELL);
+      const row = Math.floor((my - gridOy) / CELL);
+      if (col >= 0 && col < quilt.gridW && row >= 0 && row < quilt.gridH) {
+        hoverRef.current = { col, row };
+      } else {
+        hoverRef.current = null;
+      }
+    }
+
     function onContext(e: Event) { e.preventDefault(); }
     canvas.addEventListener('click', onClick);
+    canvas.addEventListener('mousemove', onMove);
     canvas.addEventListener('contextmenu', onContext);
     canvas.addEventListener('mousedown', (e) => { if (e.button === 2) onClick(e); });
-    return () => { canvas.removeEventListener('click', onClick); canvas.removeEventListener('contextmenu', onContext); };
+    return () => { canvas.removeEventListener('click', onClick); canvas.removeEventListener('mousemove', onMove); canvas.removeEventListener('contextmenu', onContext); };
   }, [socket, myId, interpRef]);
 
   useEffect(() => {
@@ -154,9 +177,26 @@ export default function QuiltGame() {
           }
         }
 
-        // Ghost preview of selected piece on grid (own side only)
+        // Ghost preview on grid at hover position
+        if (isMe && !p.placedPieces[p.selectedPiece] && hoverRef.current) {
+          const piece = quilt.pieces[p.selectedPiece];
+          const shape = rotatePiece(piece.shape, p.rotation);
+          const hc = hoverRef.current.col, hr = hoverRef.current.row;
+          const canPlace = shape.every(([dc, dr]) => {
+            const nc = hc + dc, nr = hr + dr;
+            return nc >= 0 && nc < quilt.gridW && nr >= 0 && nr < quilt.gridH && p.grid[nr]?.[nc] === null;
+          });
+          for (const [dc, dr] of shape) {
+            const gc = hc + dc, gr = hr + dr;
+            if (gc >= 0 && gc < quilt.gridW && gr >= 0 && gr < quilt.gridH) {
+              c.fillStyle = canPlace ? piece.color + '55' : '#ff444433';
+              c.fillRect(gridOx + gc * CELL + 2, gridOy + gr * CELL + 2, CELL - 4, CELL - 4);
+            }
+          }
+        }
+
+        // Selected piece shape hint at top-right of grid
         if (isMe && !p.placedPieces[p.selectedPiece]) {
-          // Show piece shape hint at top-right of grid
           const piece = quilt.pieces[p.selectedPiece];
           const shape = rotatePiece(piece.shape, p.rotation);
           const previewX = gridOx + quilt.gridW * CELL + 10;

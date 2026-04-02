@@ -8,7 +8,7 @@ import { volleyballGame } from './volleyball.js';
 import { asteroidDodgeGame } from './asteroid-dodge.js';
 import { flappyRaceGame } from './flappy-race.js';
 import { spaceInvadersGame } from './space-invaders.js';
-import { cowboyShootoutGame } from './cowboy-shootout.js';
+// import { cowboyShootoutGame } from './cowboy-shootout.js';
 import { arrowSequenceGame } from './arrow-sequence.js';
 import { rhythmGame } from './rhythm.js';
 import { typingRaceGame } from './typing-race.js';
@@ -79,7 +79,7 @@ gameRegistry.register(volleyballGame);
 gameRegistry.register(asteroidDodgeGame);
 gameRegistry.register(flappyRaceGame);
 gameRegistry.register(spaceInvadersGame);
-gameRegistry.register(cowboyShootoutGame);
+// gameRegistry.register(cowboyShootoutGame);
 gameRegistry.register(arrowSequenceGame);
 gameRegistry.register(rhythmGame);
 gameRegistry.register(typingRaceGame);
@@ -146,7 +146,7 @@ gameRegistry.registerSet({
     'joust',
     'air-hockey',
     'space-invaders',
-    'cowboy-shootout',
+    // 'cowboy-shootout',
     'rhythm',
     'tanks',
     'rounds',

@@ -146,19 +146,11 @@ export class MatchManager {
   }
 
   private endRound(match: ActiveMatch, winnerId: string): void {
-    // Guard against double-call (game logic might fire endRound after cleanup)
+    // Guard against double-call or stale match
     if (!match.currentGame && !match.emitterCleanup) return;
+    if (!this.matches.has(match.lobbyId)) return; // match already cleaned up
 
-    // Prevent instant round endings from first-tick collisions
-    const elapsed = Date.now() - match.roundStartTime;
-    if (elapsed < MIN_ROUND_DURATION) {
-      const roundAtDefer = match.currentRound;
-      setTimeout(() => {
-        // Only fire if we're still on the same round (prevents killing the next round)
-        if (match.currentRound === roundAtDefer) this.endRound(match, winnerId);
-      }, MIN_ROUND_DURATION - elapsed);
-      return;
-    }
+    // (MIN_ROUND_DURATION guard removed — caused deferred endRound calls to kill subsequent rounds)
 
     if (match.emitterCleanup) {
       match.emitterCleanup();
