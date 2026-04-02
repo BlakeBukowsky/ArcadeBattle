@@ -37,7 +37,7 @@ export class MatchManager {
   private registry: GameRegistry;
   private matches = new Map<string, ActiveMatch>();
   private playerToLobby = new Map<string, string>();
-  public onMatchEnd?: (lobbyId: string) => void;
+  public onMatchEnd?: (lobbyId: string, match: { players: [string, string]; score: MatchScore; rounds: RoundResult[]; winnerId: string }) => void;
 
   private userSocketMap: UserSocketMap;
 
@@ -172,7 +172,7 @@ export class MatchManager {
         rounds: match.rounds,
       });
       this.cleanup(match);
-      this.onMatchEnd?.(match.lobbyId);
+      this.onMatchEnd?.(match.lobbyId, { players: match.players, score: match.score, rounds: match.rounds, winnerId });
       return;
     }
 

@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import type { LobbyConfig } from '@arcade-battle/shared';
 import { RECONNECT_TIMEOUT_SECONDS } from '@arcade-battle/shared';
-import { initDatabase } from './db.js';
+import { initDatabase, saveMatch } from './db.js';
 import { createAuthRouter } from './auth.js';
 import { createFeedbackRouter } from './feedback.js';
 import { authMiddleware, UserSocketMap } from './middleware.js';
@@ -174,9 +174,27 @@ io.on('connection', (socket) => {
   });
 });
 
-matchManager.onMatchEnd = (lobbyId: string) => {
+matchManager.onMatchEnd = (lobbyId, matchData) => {
   lobbyManager.enterPostMatch(lobbyId);
   lobbyManager.emitStateToAll(lobbyId, io);
+
+  // Save match history
+  const [p1, p2] = matchData.players;
+  const lobby = lobbyManager.getLobbyState(lobbyId);
+  const p1Name = lobby?.players.find((p) => p.id === p1)?.displayName ?? p1;
+  const p2Name = lobby?.players.find((p) => p.id === p2)?.displayName ?? p2;
+  try {
+    saveMatch({
+      player1_id: p1, player1_name: p1Name,
+      player2_id: p2, player2_name: p2Name,
+      winner_id: matchData.winnerId,
+      player1_score: matchData.score[p1] ?? 0,
+      player2_score: matchData.score[p2] ?? 0,
+      rounds: JSON.stringify(matchData.rounds),
+      lobby_id: lobbyId,
+      game_set: lobby?.config.gameSetId,
+    });
+  } catch (e) { console.error('Failed to save match:', e); }
 };
 
 // In production, serve the built client

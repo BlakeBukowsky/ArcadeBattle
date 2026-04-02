@@ -921,3 +921,64 @@
   color: #888;
   font-size: 1.1rem;
 }
+
+/* ── Match History (Profile) ── */
+
+.match-history-section {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 1rem;
+}
+
+.match-history-section h2 {
+  font-size: 1rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.match-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #222;
+  font-size: 0.85rem;
+}
+
+.match-result {
+  font-weight: 700;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.match-entry.won .match-result {
+  color: #00ff88;
+}
+
+.match-entry.lost .match-result {
+  color: #ff4488;
+}
+
+.match-opponent {
+  color: #ccc;
+  min-width: 80px;
+}
+
+.match-score {
+  color: #fff;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: center;
+}
+
+.match-games {
+  color: #666;
+  font-size: 0.75rem;
+  flex: 1;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

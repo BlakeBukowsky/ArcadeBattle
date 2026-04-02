@@ -50,6 +50,25 @@ export function initDatabase(): Database.Database {
 
     CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(type);
     CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+
+    CREATE TABLE IF NOT EXISTS match_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lobby_id TEXT,
+      player1_id TEXT NOT NULL,
+      player1_name TEXT,
+      player2_id TEXT NOT NULL,
+      player2_name TEXT,
+      winner_id TEXT NOT NULL,
+      player1_score INTEGER NOT NULL,
+      player2_score INTEGER NOT NULL,
+      rounds TEXT NOT NULL,
+      game_set TEXT,
+      played_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_match_player1 ON match_history(player1_id);
+    CREATE INDEX IF NOT EXISTS idx_match_player2 ON match_history(player2_id);
+    CREATE INDEX IF NOT EXISTS idx_match_played ON match_history(played_at);
   `);
 
   return db;
@@ -122,6 +141,29 @@ export function updateUser(userId: string, displayName: string, avatarUrl: strin
     UPDATE users SET display_name = ?, avatar_url = ? WHERE id = ?
   `).run(displayName, avatarUrl, userId);
   return findUserById(userId);
+}
+
+export interface MatchRecord {
+  player1_id: string; player1_name: string;
+  player2_id: string; player2_name: string;
+  winner_id: string;
+  player1_score: number; player2_score: number;
+  rounds: string; // JSON string of RoundResult[]
+  lobby_id?: string; game_set?: string;
+}
+
+export function saveMatch(m: MatchRecord): void {
+  getDb().prepare(`
+    INSERT INTO match_history (lobby_id, player1_id, player1_name, player2_id, player2_name, winner_id, player1_score, player2_score, rounds, game_set)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(m.lobby_id ?? null, m.player1_id, m.player1_name, m.player2_id, m.player2_name, m.winner_id, m.player1_score, m.player2_score, m.rounds, m.game_set ?? null);
+}
+
+export function getMatchesForUser(userId: string, limit = 20): unknown[] {
+  return getDb().prepare(`
+    SELECT * FROM match_history WHERE player1_id = ? OR player2_id = ?
+    ORDER BY played_at DESC LIMIT ?
+  `).all(userId, userId, limit);
 }
 
 export function linkOAuthAccount(

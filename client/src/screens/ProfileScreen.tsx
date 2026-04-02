@@ -1,11 +1,34 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useGame } from '../context/GameContext.tsx';
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || window.location.origin;
+
+interface MatchHistoryEntry {
+  id: number;
+  player1_id: string; player1_name: string;
+  player2_id: string; player2_name: string;
+  winner_id: string;
+  player1_score: number; player2_score: number;
+  rounds: string;
+  played_at: string;
+}
+
 export default function ProfileScreen() {
-  const { user, updateProfile, uploadAvatar, logout } = useAuth();
+  const { user, token, updateProfile, uploadAvatar, logout } = useAuth();
   const game = useGame();
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+  const [matches, setMatches] = useState<MatchHistoryEntry[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${SERVER_URL}/api/feedback/user-matches`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: MatchHistoryEntry[]) => setMatches(data))
+      .catch(() => {});
+  }, [token]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -137,6 +160,29 @@ export default function ProfileScreen() {
           </button>
         </div>
       </div>
+
+      {matches.length > 0 && (
+        <div className="match-history-section">
+          <h2>Match History</h2>
+          {matches.map((m) => {
+            const isP1 = m.player1_id === user.id;
+            const won = m.winner_id === user.id;
+            const oppName = isP1 ? m.player2_name : m.player1_name;
+            const myScore = isP1 ? m.player1_score : m.player2_score;
+            const oppScore = isP1 ? m.player2_score : m.player1_score;
+            let games: string[] = [];
+            try { games = JSON.parse(m.rounds).map((r: { gameName: string }) => r.gameName); } catch {}
+            return (
+              <div key={m.id} className={`match-entry ${won ? 'won' : 'lost'}`}>
+                <span className="match-result">{won ? 'W' : 'L'}</span>
+                <span className="match-opponent">vs {oppName}</span>
+                <span className="match-score">{myScore}-{oppScore}</span>
+                <span className="match-games">{[...new Set(games)].join(', ')}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="profile-account-section">
         <p className="profile-account-id">Account ID: {user.id}</p>
