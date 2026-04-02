@@ -12,29 +12,62 @@ const TICK_RATE = 1000 / 60;
 
 interface Wall { x: number; y: number; w: number; h: number; }
 
-// Fixed arena layout — symmetric for fairness
-const WALLS: Wall[] = [
-  // Border walls
+const BORDERS: Wall[] = [
   { x: 0, y: 0, w: W, h: 8 },
   { x: 0, y: H - 8, w: W, h: 8 },
   { x: 0, y: 0, w: 8, h: H },
   { x: W - 8, y: 0, w: 8, h: H },
-  // Center pillars
-  { x: W / 2 - 6, y: 140, w: 12, h: 90 },
-  { x: W / 2 - 6, y: H - 230, w: 12, h: 90 },
-  // Horizontal center bars
-  { x: 260, y: H / 2 - 6, w: 90, h: 12 },
-  { x: W - 350, y: H / 2 - 6, w: 90, h: 12 },
-  // Corner blocks
-  { x: 100, y: 100, w: 50, h: 35 },
-  { x: W - 150, y: 100, w: 50, h: 35 },
-  { x: 100, y: H - 135, w: 50, h: 35 },
-  { x: W - 150, y: H - 135, w: 50, h: 35 },
-  // Mid-lane cover
-  { x: 200, y: 190, w: 30, h: 30 },
-  { x: W - 230, y: 190, w: 30, h: 30 },
-  { x: 200, y: H - 220, w: 30, h: 30 },
-  { x: W - 230, y: H - 220, w: 30, h: 30 },
+];
+
+const TANK_LAYOUTS: Wall[][] = [
+  // Layout 0: Pillars & Cover
+  [...BORDERS,
+    { x: W / 2 - 6, y: 140, w: 12, h: 90 },
+    { x: W / 2 - 6, y: H - 230, w: 12, h: 90 },
+    { x: 260, y: H / 2 - 6, w: 90, h: 12 },
+    { x: W - 350, y: H / 2 - 6, w: 90, h: 12 },
+    { x: 100, y: 100, w: 50, h: 35 },
+    { x: W - 150, y: 100, w: 50, h: 35 },
+    { x: 100, y: H - 135, w: 50, h: 35 },
+    { x: W - 150, y: H - 135, w: 50, h: 35 },
+    { x: 200, y: 190, w: 30, h: 30 },
+    { x: W - 230, y: 190, w: 30, h: 30 },
+    { x: 200, y: H - 220, w: 30, h: 30 },
+    { x: W - 230, y: H - 220, w: 30, h: 30 },
+  ],
+  // Layout 1: Cross
+  [...BORDERS,
+    { x: W / 2 - 6, y: 80, w: 12, h: 340 },
+    { x: 150, y: H / 2 - 6, w: 200, h: 12 },
+    { x: W - 350, y: H / 2 - 6, w: 200, h: 12 },
+    { x: 120, y: 120, w: 40, h: 40 },
+    { x: W - 160, y: 120, w: 40, h: 40 },
+    { x: 120, y: H - 160, w: 40, h: 40 },
+    { x: W - 160, y: H - 160, w: 40, h: 40 },
+  ],
+  // Layout 2: Corridors
+  [...BORDERS,
+    { x: 150, y: 100, w: 500, h: 12 },
+    { x: 150, y: H - 112, w: 500, h: 12 },
+    { x: 100, y: 200, w: 250, h: 12 },
+    { x: W - 350, y: 200, w: 250, h: 12 },
+    { x: 100, y: H - 212, w: 250, h: 12 },
+    { x: W - 350, y: H - 212, w: 250, h: 12 },
+    { x: W / 2 - 6, y: 180, w: 12, h: 60 },
+    { x: W / 2 - 6, y: H - 240, w: 12, h: 60 },
+  ],
+  // Layout 3: Arena
+  [...BORDERS,
+    { x: W / 2 - 40, y: H / 2 - 40, w: 80, h: 80 },
+    { x: 140, y: 60, w: 12, h: 100 },
+    { x: W - 152, y: 60, w: 12, h: 100 },
+    { x: 140, y: H - 160, w: 12, h: 100 },
+    { x: W - 152, y: H - 160, w: 12, h: 100 },
+    { x: 250, y: 140, w: 40, h: 12 },
+    { x: W - 290, y: 140, w: 40, h: 12 },
+    { x: 250, y: H - 152, w: 40, h: 12 },
+    { x: W - 290, y: H - 152, w: 40, h: 12 },
+  ],
 ];
 
 interface Bullet {
@@ -103,13 +136,15 @@ export const tanksGame: ServerGameModule = {
       [p2]: { forward: false, back: false, left: false, right: false, fire: false },
     };
 
+    const walls = TANK_LAYOUTS[Math.floor(Math.random() * TANK_LAYOUTS.length)];
+
     const state: TanksGameState = {
       players: {
         [p1]: { x: 60, y: H / 2, angle: 0, alive: true, lastFire: 0 },
         [p2]: { x: W - 60, y: H / 2, angle: Math.PI, alive: true, lastFire: 0 },
       },
       bullets: [],
-      walls: WALLS,
+      walls,
       canvasWidth: W,
       canvasHeight: H,
       winner: null,
@@ -138,12 +173,12 @@ export const tanksGame: ServerGameModule = {
           // Try move, revert if collision
           const oldX = t.x, oldY = t.y;
           t.x = nx; t.y = ny;
-          if (tankCollidesWall(t, WALLS)) {
+          if (tankCollidesWall(t, walls)) {
             // Try sliding on each axis separately
             t.x = nx; t.y = oldY;
-            if (tankCollidesWall(t, WALLS)) {
+            if (tankCollidesWall(t, walls)) {
               t.x = oldX; t.y = ny;
-              if (tankCollidesWall(t, WALLS)) {
+              if (tankCollidesWall(t, walls)) {
                 t.x = oldX; t.y = oldY;
               }
             }
@@ -174,7 +209,7 @@ export const tanksGame: ServerGameModule = {
         b.y += b.vy;
 
         // Wall bounce
-        for (const wall of WALLS) {
+        for (const wall of walls) {
           if (rectContainsPoint(wall.x, wall.y, wall.w, wall.h, b.x, b.y)) {
             // Determine bounce axis — push out and reflect
             const fromLeft = b.x - wall.x;

@@ -14,6 +14,10 @@ import TypingRaceGame from './TypingRaceGame.tsx';
 import MemoryArrowsGame from './MemoryArrowsGame.tsx';
 import TanksGame from './TanksGame.tsx';
 import LaneRacerGame from './LaneRacerGame.tsx';
+import AsteroidsGame from './AsteroidsGame.tsx';
+import MountainClimberGame from './MountainClimberGame.tsx';
+import NinjaGame from './NinjaGame.tsx';
+import BossBattleGame from './BossBattleGame.tsx';
 
 export const gameComponents: Record<string, ComponentType> = {
   'pong': PongGame,
@@ -31,4 +35,8 @@ export const gameComponents: Record<string, ComponentType> = {
   'memory-arrows': MemoryArrowsGame,
   'tanks': TanksGame,
   'lane-racer': LaneRacerGame,
+  'asteroids': AsteroidsGame,
+  'mountain-climber': MountainClimberGame,
+  'ninja': NinjaGame,
+  'boss-battle': BossBattleGame,
 };

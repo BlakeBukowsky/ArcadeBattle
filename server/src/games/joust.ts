@@ -13,17 +13,17 @@ const FLOOR_Y = H - 30;
 
 interface Platform { x: number; y: number; w: number; }
 
-const PLATFORMS: Platform[] = [
-  // Floor
-  { x: 0, y: FLOOR_Y, w: W },
-  // Mid-level platforms
-  { x: 80, y: 340, w: 160 },
-  { x: W - 240, y: 340, w: 160 },
-  // Upper platforms
-  { x: W / 2 - 80, y: 240, w: 160 },
-  // Top shelves
-  { x: 30, y: 160, w: 120 },
-  { x: W - 150, y: 160, w: 120 },
+const FLOOR: Platform = { x: 0, y: FLOOR_Y, w: W };
+
+const JOUST_LAYOUTS: { platforms: Platform[]; spawn1: number; spawn2: number }[] = [
+  // Layout 0: Classic
+  { platforms: [FLOOR, { x: 80, y: 340, w: 160 }, { x: W - 240, y: 340, w: 160 }, { x: W / 2 - 80, y: 240, w: 160 }, { x: 30, y: 160, w: 120 }, { x: W - 150, y: 160, w: 120 }], spawn1: 1, spawn2: 2 },
+  // Layout 1: Staircase
+  { platforms: [FLOOR, { x: 50, y: 380, w: 120 }, { x: 200, y: 310, w: 120 }, { x: 350, y: 240, w: 100 }, { x: 500, y: 310, w: 120 }, { x: 650, y: 380, w: 120 }], spawn1: 1, spawn2: 5 },
+  // Layout 2: Tower
+  { platforms: [FLOOR, { x: W / 2 - 60, y: 350, w: 120 }, { x: W / 2 - 50, y: 250, w: 100 }, { x: W / 2 - 40, y: 150, w: 80 }, { x: 40, y: 280, w: 100 }, { x: W - 140, y: 280, w: 100 }], spawn1: 4, spawn2: 5 },
+  // Layout 3: Floating Islands
+  { platforms: [FLOOR, { x: 60, y: 360, w: 90 }, { x: 220, y: 280, w: 90 }, { x: 380, y: 200, w: 90 }, { x: 500, y: 320, w: 90 }, { x: 650, y: 240, w: 90 }, { x: 350, y: 380, w: 80 }], spawn1: 1, spawn2: 4 },
 ];
 
 interface PlayerState {
@@ -56,20 +56,25 @@ export const joustGame: ServerGameModule = {
       [p2]: { left: false, right: false, flap: false },
     };
 
+    const layout = JOUST_LAYOUTS[Math.floor(Math.random() * JOUST_LAYOUTS.length)];
+    const platforms = layout.platforms;
+    const spawnPlat1 = platforms[layout.spawn1];
+    const spawnPlat2 = platforms[layout.spawn2];
+
     const state: JoustState = {
       players: {
-        [p1]: { x: 120, y: PLATFORMS[1].y - PLAYER_H, vx: 0, vy: 0, alive: true, iframeUntil: 0 },
-        [p2]: { x: W - 120 - PLAYER_W, y: PLATFORMS[2].y - PLAYER_H, vx: 0, vy: 0, alive: true, iframeUntil: 0 },
+        [p1]: { x: spawnPlat1.x + spawnPlat1.w / 2 - PLAYER_W / 2, y: spawnPlat1.y - PLAYER_H, vx: 0, vy: 0, alive: true, iframeUntil: 0 },
+        [p2]: { x: spawnPlat2.x + spawnPlat2.w / 2 - PLAYER_W / 2, y: spawnPlat2.y - PLAYER_H, vx: 0, vy: 0, alive: true, iframeUntil: 0 },
       },
       scores: { [p1]: 0, [p2]: 0 },
-      platforms: PLATFORMS,
+      platforms,
       canvasWidth: W,
       canvasHeight: H,
     };
 
     function respawn(pid: string): void {
       const p = state.players[pid];
-      const plat = pid === p1 ? PLATFORMS[1] : PLATFORMS[2];
+      const plat = pid === p1 ? spawnPlat1 : spawnPlat2;
       p.x = plat.x + plat.w / 2 - PLAYER_W / 2;
       p.y = plat.y - PLAYER_H;
       p.vx = 0;
@@ -80,7 +85,7 @@ export const joustGame: ServerGameModule = {
 
     function checkPlatformCollision(p: PlayerState): void {
       if (p.vy < 0) return; // only collide when falling
-      for (const plat of PLATFORMS) {
+      for (const plat of platforms) {
         if (
           p.x + PLAYER_W > plat.x && p.x < plat.x + plat.w &&
           p.y + PLAYER_H >= plat.y && p.y + PLAYER_H <= plat.y + 12

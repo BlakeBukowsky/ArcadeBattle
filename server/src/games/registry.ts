@@ -15,6 +15,10 @@ import { typingRaceGame } from './typing-race.js';
 import { memoryArrowsGame } from './memory-arrows.js';
 import { tanksGame } from './tanks.js';
 import { laneRacerGame } from './lane-racer.js';
+import { asteroidsGame } from './asteroids.js';
+import { mountainClimberGame } from './mountain-climber.js';
+import { ninjaGame } from './ninja.js';
+import { bossBattleGame } from './boss-battle.js';
 
 class GameRegistry {
   private games = new Map<string, ServerGameModule>();
@@ -69,6 +73,10 @@ gameRegistry.register(typingRaceGame);
 gameRegistry.register(memoryArrowsGame);
 gameRegistry.register(tanksGame);
 gameRegistry.register(laneRacerGame);
+gameRegistry.register(asteroidsGame);
+gameRegistry.register(mountainClimberGame);
+gameRegistry.register(ninjaGame);
+gameRegistry.register(bossBattleGame);
 
 // Register game sets
 gameRegistry.registerSet({
