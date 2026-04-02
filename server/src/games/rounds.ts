@@ -68,6 +68,7 @@ const MAPS: Plat[][] = [
 interface PlayerState {
   x: number; y: number; vx: number; vy: number;
   grounded: boolean; facing: 1 | -1;
+  aimAngle: number;
   alive: boolean; iframeUntil: number; lastFire: number;
 }
 
@@ -102,8 +103,8 @@ export const roundsGame: ServerGameModule = {
 
     const state: RoundsState = {
       players: {
-        [p1]: { x: 100, y: H - 60, vx: 0, vy: 0, grounded: true, facing: 1, alive: true, iframeUntil: Date.now() + IFRAME_DURATION, lastFire: 0 },
-        [p2]: { x: W - 100 - PW, y: H - 60, vx: 0, vy: 0, grounded: true, facing: -1, alive: true, iframeUntil: Date.now() + IFRAME_DURATION, lastFire: 0 },
+        [p1]: { x: 100, y: H - 60, vx: 0, vy: 0, grounded: true, facing: 1, aimAngle: 0, alive: true, iframeUntil: Date.now() + IFRAME_DURATION, lastFire: 0 },
+        [p2]: { x: W - 100 - PW, y: H - 60, vx: 0, vy: 0, grounded: true, facing: -1, aimAngle: Math.PI, alive: true, iframeUntil: Date.now() + IFRAME_DURATION, lastFire: 0 },
       },
       bullets: [],
       platforms: MAPS[currentMapIndex],
@@ -125,11 +126,13 @@ export const roundsGame: ServerGameModule = {
       state.players[p1].x = 100; state.players[p1].y = H - 60;
       state.players[p1].vx = 0; state.players[p1].vy = 0;
       state.players[p1].alive = true; state.players[p1].facing = 1;
+      state.players[p1].aimAngle = 0;
       state.players[p1].iframeUntil = Date.now() + IFRAME_DURATION;
 
       state.players[p2].x = W - 100 - PW; state.players[p2].y = H - 60;
       state.players[p2].vx = 0; state.players[p2].vy = 0;
       state.players[p2].alive = true; state.players[p2].facing = -1;
+      state.players[p2].aimAngle = Math.PI;
       state.players[p2].iframeUntil = Date.now() + IFRAME_DURATION;
 
       state.bullets = [];
@@ -181,10 +184,10 @@ export const roundsGame: ServerGameModule = {
           inp.fire = false;
           p.lastFire = now;
           state.bullets.push({
-            x: p.x + PW / 2 + p.facing * (PW / 2 + 2),
-            y: p.y + PH / 2 - 2,
-            vx: p.facing * BULLET_SPEED,
-            vy: 0,
+            x: p.x + PW / 2 + Math.cos(p.aimAngle) * (PW / 2 + 2),
+            y: p.y + PH / 2 + Math.sin(p.aimAngle) * (PH / 2 + 2),
+            vx: Math.cos(p.aimAngle) * BULLET_SPEED,
+            vy: Math.sin(p.aimAngle) * BULLET_SPEED,
             owner: pid,
             bounces: 0,
             life: 120,
@@ -262,13 +265,17 @@ export const roundsGame: ServerGameModule = {
 
     return {
       onPlayerInput(playerId: string, data: unknown): void {
-        const input = data as { left?: boolean; right?: boolean; jump?: boolean; fire?: boolean };
+        const input = data as { left?: boolean; right?: boolean; jump?: boolean; fire?: boolean; aimAngle?: number };
         const inp = inputs[playerId];
         if (!inp) return;
         if (input.left !== undefined) inp.left = input.left;
         if (input.right !== undefined) inp.right = input.right;
         if (input.jump) inp.jump = true;
         if (input.fire) inp.fire = true;
+        if (input.aimAngle !== undefined) {
+          state.players[playerId].aimAngle = input.aimAngle;
+          state.players[playerId].facing = Math.cos(input.aimAngle) >= 0 ? 1 : -1;
+        }
       },
       getState() { return state; },
       cleanup(): void { running = false; clearInterval(interval); },

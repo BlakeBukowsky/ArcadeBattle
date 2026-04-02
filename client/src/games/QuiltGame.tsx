@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
@@ -6,20 +6,22 @@ import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 type Shape = [number, number][];
 
 interface Quilt { gridW: number; gridH: number; pieces: { shape: Shape; color: string }[]; }
-interface PlayerState { currentQuilt: number; grid: (string | null)[][]; currentPiece: number; completed: boolean; quiltsCompleted: number; }
+interface PlayerState {
+  currentQuilt: number; grid: (string | null)[][]; selectedPiece: number; rotation: number;
+  placedPieces: boolean[]; completed: boolean; quiltsCompleted: number;
+}
 interface QuiltState {
   players: Record<string, PlayerState>;
   quilts: Quilt[];
   canvasWidth: number; canvasHeight: number; winner: string | null;
 }
 
-const CELL = 40;
+const CELL = 36;
+const TRAY_CELL = 14;
 
 function rotatePiece(shape: Shape, times: number): Shape {
   let s = shape;
-  for (let i = 0; i < (times % 4); i++) {
-    s = s.map(([c, r]) => [-r, c]) as Shape;
-  }
+  for (let i = 0; i < (times % 4); i++) s = s.map(([c, r]) => [-r, c]) as Shape;
   const minC = Math.min(...s.map(([c]) => c));
   const minR = Math.min(...s.map(([, r]) => r));
   return s.map(([c, r]) => [c - minC, r - minR]) as Shape;
@@ -30,7 +32,6 @@ export default function QuiltGame() {
   const myId = useMyId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const interpRef = useRef(new StateBuffer<QuiltState>()).current;
-  const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
     socket.on('game:state', (data: unknown) => { interpRef.push(applyStateUpdate(interpRef.latest(), data)); });
@@ -39,9 +40,7 @@ export default function QuiltGame() {
 
   useEffect(() => {
     function kd(e: KeyboardEvent) {
-      if (e.key === 'r') { socket.emit('game:input', { action: 'rotate' }); setRotation((r) => (r + 1) % 4); }
-      if (e.key === 'e' || e.key === 'ArrowRight') socket.emit('game:input', { action: 'next' });
-      if (e.key === 'q' || e.key === 'ArrowLeft') socket.emit('game:input', { action: 'prev' });
+      if (e.key === 'r') socket.emit('game:input', { action: 'rotate' });
     }
     window.addEventListener('keydown', kd);
     return () => window.removeEventListener('keydown', kd);
@@ -50,6 +49,7 @@ export default function QuiltGame() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     function onClick(e: MouseEvent) {
       const rect = canvas!.getBoundingClientRect();
       const state = interpRef.latest();
@@ -58,7 +58,6 @@ export default function QuiltGame() {
       const mx = (e.clientX - rect.left) * (W / rect.width);
       const my = (e.clientY - rect.top) * (state.canvasHeight / rect.height);
 
-      // Only handle clicks on own half (left side for player index 0)
       const pids = Object.keys(state.players);
       const myIdx = pids.indexOf(myId);
       const ox = myIdx * HALF;
@@ -69,17 +68,45 @@ export default function QuiltGame() {
       const quilt = state.quilts[p.currentQuilt];
       if (!quilt) return;
 
-      const gridOx = ox + (HALF - quilt.gridW * CELL) / 2;
-      const gridOy = 60;
+      // Grid area
+      const gridOx = ox + 10;
+      const gridOy = 50;
+      const gridCol = Math.floor((mx - gridOx) / CELL);
+      const gridRow = Math.floor((my - gridOy) / CELL);
 
-      const col = Math.floor((mx - gridOx) / CELL);
-      const row = Math.floor((my - gridOy) / CELL);
-      if (col >= 0 && col < quilt.gridW && row >= 0 && row < quilt.gridH) {
-        socket.emit('game:input', { action: 'place', col, row });
+      if (gridCol >= 0 && gridCol < quilt.gridW && gridRow >= 0 && gridRow < quilt.gridH) {
+        if (e.button === 2 || e.shiftKey) {
+          // Right click or shift+click to remove
+          socket.emit('game:input', { action: 'remove', col: gridCol, row: gridRow });
+        } else {
+          socket.emit('game:input', { action: 'place', col: gridCol, row: gridRow });
+        }
+        return;
+      }
+
+      // Piece tray area (below grid)
+      const trayY = gridOy + quilt.gridH * CELL + 15;
+      if (my >= trayY && my < trayY + 80) {
+        // Find which piece was clicked
+        let px = ox + 10;
+        for (let pi = 0; pi < quilt.pieces.length; pi++) {
+          const piece = quilt.pieces[pi];
+          const maxC = Math.max(...piece.shape.map(([c]) => c)) + 1;
+          const pieceW = maxC * TRAY_CELL + 6;
+          if (mx >= px && mx < px + pieceW) {
+            socket.emit('game:input', { action: 'select', pieceIndex: pi });
+            return;
+          }
+          px += pieceW + 4;
+        }
       }
     }
+
+    function onContext(e: Event) { e.preventDefault(); }
     canvas.addEventListener('click', onClick);
-    return () => canvas.removeEventListener('click', onClick);
+    canvas.addEventListener('contextmenu', onContext);
+    canvas.addEventListener('mousedown', (e) => { if (e.button === 2) onClick(e); });
+    return () => { canvas.removeEventListener('click', onClick); canvas.removeEventListener('contextmenu', onContext); };
   }, [socket, myId, interpRef]);
 
   useEffect(() => {
@@ -109,17 +136,17 @@ export default function QuiltGame() {
         c.save();
         c.beginPath(); c.rect(ox, 0, HALF, H); c.clip();
 
-        drawLabel(c, isMe ? 'YOU' : 'OPPONENT', ox + HALF / 2, 18, { color: '#ffffff88', font: '12px monospace' });
-        drawLabel(c, `Quilt ${p.quiltsCompleted + 1} / ${state.quilts.length}`, ox + HALF / 2, 38, { color: '#ffffff', font: '14px monospace' });
+        drawLabel(c, isMe ? 'YOU' : 'OPPONENT', ox + HALF / 2, 16, { color: '#ffffff88', font: '12px monospace' });
+        drawLabel(c, `Quilt ${p.quiltsCompleted + 1} / ${state.quilts.length}`, ox + HALF / 2, 34, { color: '#ffffff', font: '14px monospace' });
 
         // Grid
-        const gridOx = ox + (HALF - quilt.gridW * CELL) / 2;
-        const gridOy = 60;
+        const gridOx = ox + 10;
+        const gridOy = 50;
 
         for (let r = 0; r < quilt.gridH; r++) {
           for (let col = 0; col < quilt.gridW; col++) {
-            const cellColor = p.grid[r]?.[col];
             const cx = gridOx + col * CELL, cy = gridOy + r * CELL;
+            const cellColor = p.grid[r]?.[col];
             c.fillStyle = cellColor ?? '#1a1a1a';
             c.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
             c.strokeStyle = '#333'; c.lineWidth = 1;
@@ -127,24 +154,57 @@ export default function QuiltGame() {
           }
         }
 
-        // Current piece preview (only for own side)
-        if (isMe && !p.completed) {
-          const piece = quilt.pieces[p.currentPiece];
-          if (piece) {
-            const shape = rotatePiece(piece.shape, rotation);
-            const previewY = gridOy + quilt.gridH * CELL + 20;
-            drawLabel(c, `Piece ${p.currentPiece + 1} — Q/E to browse, R to rotate, Click to place`, ox + HALF / 2, previewY, { color: '#888', font: '10px monospace' });
-            const previewOx = ox + HALF / 2 - 20;
-            for (const [dc, dr] of shape) {
-              c.fillStyle = piece.color;
-              c.fillRect(previewOx + dc * 20, previewY + 10 + dr * 20, 18, 18);
-            }
+        // Ghost preview of selected piece on grid (own side only)
+        if (isMe && !p.placedPieces[p.selectedPiece]) {
+          // Show piece shape hint at top-right of grid
+          const piece = quilt.pieces[p.selectedPiece];
+          const shape = rotatePiece(piece.shape, p.rotation);
+          const previewX = gridOx + quilt.gridW * CELL + 10;
+          drawLabel(c, 'Selected:', previewX + 20, gridOy + 5, { color: '#888', font: '9px monospace' });
+          for (const [dc, dr] of shape) {
+            c.fillStyle = piece.color + '88';
+            c.fillRect(previewX + dc * 16, gridOy + 12 + dr * 16, 14, 14);
           }
-        } else if (!isMe) {
-          // Opponent: just show progress
+        }
+
+        // Piece tray — show ALL pieces
+        const trayY = gridOy + quilt.gridH * CELL + 15;
+        if (isMe) {
+          drawLabel(c, 'Pieces (click to select, R to rotate, right-click grid to remove)', ox + HALF / 2, trayY - 4, { color: '#666', font: '8px monospace' });
+        }
+
+        let trayX = ox + 10;
+        for (let pi = 0; pi < quilt.pieces.length; pi++) {
+          const piece = quilt.pieces[pi];
+          const shape = piece.shape;
+          const maxC = Math.max(...shape.map(([cc]) => cc)) + 1;
+          const maxR = Math.max(...shape.map(([, rr]) => rr)) + 1;
+          const pieceW = maxC * TRAY_CELL + 4;
+
+          // Background
+          const isSelected = isMe && p.selectedPiece === pi;
+          const isPlaced = p.placedPieces[pi];
+
+          if (isSelected) {
+            c.strokeStyle = '#ffffff';
+            c.lineWidth = 2;
+            c.strokeRect(trayX - 2, trayY - 2, pieceW + 2, maxR * TRAY_CELL + 6);
+          }
+
+          for (const [dc, dr] of shape) {
+            c.fillStyle = isPlaced ? '#333' : piece.color;
+            c.globalAlpha = isPlaced ? 0.3 : 1;
+            c.fillRect(trayX + dc * TRAY_CELL + 1, trayY + 2 + dr * TRAY_CELL + 1, TRAY_CELL - 2, TRAY_CELL - 2);
+          }
+          c.globalAlpha = 1;
+
+          trayX += pieceW + 4;
+        }
+
+        if (!isMe) {
           const filled = p.grid.flat().filter((v) => v !== null).length;
           const total = quilt.gridW * quilt.gridH;
-          drawLabel(c, `${filled}/${total} filled`, ox + HALF / 2, gridOy + quilt.gridH * CELL + 20, { color: '#888', font: '12px monospace' });
+          drawLabel(c, `${filled}/${total}`, ox + HALF / 2, trayY + 20, { color: '#888', font: '12px monospace' });
         }
 
         c.restore();
@@ -161,12 +221,12 @@ export default function QuiltGame() {
     }
     animId = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animId);
-  }, [socket, myId, interpRef, rotation]);
+  }, [socket, myId, interpRef]);
 
   return (
     <div className="game-container">
       <canvas ref={canvasRef} className="game-canvas" />
-      <p className="controls-hint">Click grid to place, R to rotate, Q/E to browse pieces</p>
+      <p className="controls-hint">Click tray to select piece, R to rotate, click grid to place, right-click to remove</p>
     </div>
   );
 }

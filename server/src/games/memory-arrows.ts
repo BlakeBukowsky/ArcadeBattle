@@ -168,14 +168,16 @@ export const memoryArrowsGame: ServerGameModule = {
       const remaining = ctx.players.filter((pid) => state.players[pid].alive);
 
       if (remaining.length === 0) {
-        running = false;
-        const p1Progress = state.players[p1].inputIndex;
-        const p2Progress = state.players[p2].inputIndex;
-        const winner = p1Progress > p2Progress ? p1 : p2Progress > p1Progress ? p2 : Math.random() < 0.5 ? p1 : p2;
-        state.winner = winner;
+        // Both failed — revive both and retry same length
+        for (const pid of ctx.players) {
+          state.players[pid].alive = true;
+          state.players[pid].failed = false;
+        }
         state.phase = 'result';
         ctx.emit('game:state', state);
-        ctx.endRound(winner);
+        // Don't increment round — same length again
+        state.round--;
+        setTimeout(() => { if (running) startRound(); }, PAUSE_BETWEEN_ROUNDS);
         return;
       }
 

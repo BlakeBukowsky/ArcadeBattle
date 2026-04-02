@@ -7,7 +7,7 @@ const PW = 16, PH = 22, BULLET_R = 4;
 
 interface Plat { x: number; y: number; w: number; }
 interface Bullet { x: number; y: number; vx: number; vy: number; owner: string; bounces: number; }
-interface PlayerState { x: number; y: number; facing: 1 | -1; alive: boolean; iframeUntil: number; }
+interface PlayerState { x: number; y: number; facing: 1 | -1; aimAngle: number; alive: boolean; iframeUntil: number; }
 interface RoundsState {
   players: Record<string, PlayerState>;
   bullets: Bullet[];
@@ -33,7 +33,6 @@ export default function RoundsGame() {
       if (e.key === 'a' || e.key === 'ArrowLeft') socket.emit('game:input', { left: true });
       if (e.key === 'd' || e.key === 'ArrowRight') socket.emit('game:input', { right: true });
       if (e.key === 'w' || e.key === 'ArrowUp') { e.preventDefault(); socket.emit('game:input', { jump: true }); }
-      if (e.key === ' ') { e.preventDefault(); socket.emit('game:input', { fire: true }); }
     }
     function ku(e: KeyboardEvent) {
       if (e.key === 'a' || e.key === 'ArrowLeft') socket.emit('game:input', { left: false });
@@ -43,6 +42,27 @@ export default function RoundsGame() {
     window.addEventListener('keyup', ku);
     return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); };
   }, [socket]);
+
+  // Mouse aim + click to fire
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let lastAim = 0;
+    function onMove(e: MouseEvent) {
+      const now = Date.now(); if (now - lastAim < 33) return; lastAim = now;
+      const rect = canvas!.getBoundingClientRect();
+      const state = interpRef.latest(); if (!state) return;
+      const mx = (e.clientX - rect.left) * (state.canvasWidth / rect.width);
+      const my = (e.clientY - rect.top) * (state.canvasHeight / rect.height);
+      const p = state.players[myId]; if (!p) return;
+      const angle = Math.atan2(my - (p.y + PH / 2), mx - (p.x + PW / 2));
+      socket.emit('game:input', { aimAngle: angle });
+    }
+    function onClick() { socket.emit('game:input', { fire: true }); }
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('click', onClick);
+    return () => { canvas.removeEventListener('mousemove', onMove); canvas.removeEventListener('click', onClick); };
+  }, [socket, myId, interpRef]);
 
   useEffect(() => {
     let animId: number;
@@ -85,10 +105,21 @@ export default function RoundsGame() {
 
         drawSprite(c, isMe ? 'player' : 'opponent', p.x, p.y, PW, PH, { color, skin: pid });
 
-        // Gun
-        const gunX = p.facing > 0 ? p.x + PW : p.x - 8;
+        // Aim line + gun barrel
+        const cx = p.x + PW / 2, cy = p.y + PH / 2;
+        const gunLen = 12;
+        c.strokeStyle = isMe ? '#ffffff44' : '#ff448844';
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(cx, cy);
+        c.lineTo(cx + Math.cos(p.aimAngle) * 40, cy + Math.sin(p.aimAngle) * 40);
+        c.stroke();
         c.fillStyle = '#aaa';
-        c.fillRect(gunX, p.y + PH / 2 - 2, 8, 4);
+        c.save();
+        c.translate(cx, cy);
+        c.rotate(p.aimAngle);
+        c.fillRect(0, -2, gunLen, 4);
+        c.restore();
 
         c.globalAlpha = 1;
         drawLabel(c, isMe ? 'YOU' : 'OPP', p.x + PW / 2, p.y - 6, { color: '#ffffff44', font: '9px monospace' });
