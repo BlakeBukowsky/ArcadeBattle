@@ -218,10 +218,12 @@ export const spelunkyGame: ServerGameModule = {
         for (let c = Math.floor(p.x / TILE); c <= Math.floor((p.x + PW - 1) / TILE); c++) {
           const t = getTile(r, c);
           if (t === 2) {
-            p.alive = false;
-            running = false;
-            state.winner = pid === p1 ? p2 : p1;
-            ctx.emit('game:state', state); ctx.endRound(state.winner); return true;
+            // Reset to start instead of ending
+            p.x = CAVE_W / 2 - PW / 2;
+            p.y = TILE + 4;
+            p.vx = 0; p.vy = 0;
+            p.cameraX = 0; p.cameraY = 0;
+            return true;
           }
           if (t === 3) {
             p.completed = true;
@@ -259,12 +261,12 @@ export const spelunkyGame: ServerGameModule = {
           const dx = (p.x + PW / 2) - e.x;
           const dy = (p.y + PH / 2) - e.y;
           if (Math.abs(dx) < (PW + ENEMY_W) / 2 && Math.abs(dy) < (PH + ENEMY_H) / 2) {
-            p.alive = false;
-            running = false;
-            state.winner = pid === p1 ? p2 : p1;
-            ctx.emit('game:state', state);
-            ctx.endRound(state.winner);
-            return;
+            // Reset to start
+            p.x = CAVE_W / 2 - PW / 2;
+            p.y = TILE + 4;
+            p.vx = 0; p.vy = 0;
+            p.cameraX = 0; p.cameraY = 0;
+            break;
           }
         }
 

@@ -109,7 +109,12 @@ export class MatchManager {
       prevRoundWinner,
     };
 
+    // Send via room AND directly to each player's socket
     this.io.to(match.lobbyId).emit('match:transition', data);
+    for (const pid of match.players) {
+      const sid = this.userSocketMap.getSocketId(pid);
+      if (sid) this.io.to(sid).emit('match:transition', data);
+    }
 
     setTimeout(() => {
       this.startRound(match);
@@ -142,7 +147,12 @@ export class MatchManager {
 
     match.roundStartTime = Date.now();
     match.currentGame = gameModule.create(ctx);
+    // Send roundStart via room AND directly to each player's socket (belt + suspenders)
     this.io.to(match.lobbyId).emit('match:roundStart', { gameId });
+    for (const pid of match.players) {
+      const sid = this.userSocketMap.getSocketId(pid);
+      if (sid) this.io.to(sid).emit('match:roundStart', { gameId });
+    }
   }
 
   private endRound(match: ActiveMatch, winnerId: string): void {

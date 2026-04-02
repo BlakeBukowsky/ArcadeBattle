@@ -17,12 +17,19 @@ export default function PlayingScreen() {
     function onState() { hasReceivedState.current = true; }
     socket.on('game:state', onState);
 
-    const timer = setTimeout(() => {
+    // Request resync quickly if no state arrives, then retry
+    const timer1 = setTimeout(() => {
       if (!hasReceivedState.current) {
-        console.log('No game state received — requesting resync');
+        console.log('No game state after 1s — requesting resync');
         socket.emit('game:resync');
       }
-    }, 2000);
+    }, 1000);
+    const timer2 = setTimeout(() => {
+      if (!hasReceivedState.current) {
+        console.log('Still no game state after 3s — requesting resync again');
+        socket.emit('game:resync');
+      }
+    }, 3000);
 
     // Also request resync on socket reconnect
     function onReconnect() {
@@ -32,7 +39,8 @@ export default function PlayingScreen() {
     socket.io.on('reconnect', onReconnect);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       socket.off('game:state', onState);
       socket.io.off('reconnect', onReconnect);
     };
