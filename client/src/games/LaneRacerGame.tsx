@@ -57,13 +57,11 @@ export default function LaneRacerGame() {
       const pids = Object.keys(state.players);
       const laneW = HALF / LANES;
 
-      // Animated road lines (scroll effect based on distance)
-      const scrollY = (state.players[pids[0]]?.distance ?? 0) * 0.3;
-
       pids.forEach((pid, idx) => {
         const ox = idx * HALF;
         const p = state.players[pid];
         const isMe = pid === myId;
+        const myScroll = (p.distance ?? 0) * 0.3;
 
         c.save();
         c.beginPath(); c.rect(ox, 0, HALF, H); c.clip();
@@ -72,10 +70,10 @@ export default function LaneRacerGame() {
         c.fillStyle = '#2a2a2a';
         c.fillRect(ox, 0, HALF, H);
 
-        // Lane dividers (scrolling dashes — moving downward like the road)
+        // Lane dividers (scrolling dashes — moving downward toward player)
         c.strokeStyle = '#555'; c.lineWidth = 2;
         c.setLineDash([20, 20]);
-        c.lineDashOffset = (scrollY % 40);
+        c.lineDashOffset = myScroll % 40;
         for (let i = 1; i < LANES; i++) {
           const lx = ox + i * laneW;
           c.beginPath();

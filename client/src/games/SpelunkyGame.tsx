@@ -7,7 +7,8 @@ const PW = 12, PH = 16;
 type Tile = 0 | 1 | 2 | 3;
 
 interface PlayerState {
-  x: number; y: number; alive: boolean; completed: boolean; cameraY: number;
+  x: number; y: number; alive: boolean; completed: boolean;
+  cameraX: number; cameraY: number;
 }
 interface SpelunkyState {
   players: Record<string, PlayerState>;
@@ -52,6 +53,8 @@ export default function SpelunkyGame() {
 
       const W = state.canvasWidth, H = state.canvasHeight, HALF = W / 2;
       const T = state.tileSize;
+      const COLS = Math.ceil(state.caveWidth / T);
+      const ROWS = Math.ceil(state.caveHeight / T);
       canvas.width = W; canvas.height = H;
 
       drawBackground(c, 'spelunky', W, H, { color: '#0a0808' });
@@ -60,13 +63,10 @@ export default function SpelunkyGame() {
       c.beginPath(); c.moveTo(HALF, 0); c.lineTo(HALF, H); c.stroke(); c.setLineDash([]);
 
       const pids = Object.keys(state.players);
-
       pids.forEach((pid, idx) => {
         const ox = idx * HALF;
         const p = state.players[pid];
         const isMe = pid === myId;
-        // Center the cave in the half
-        const caveOx = ox + (HALF - state.caveWidth) / 2;
 
         c.save();
         c.beginPath(); c.rect(ox, 0, HALF, H); c.clip();
@@ -77,51 +77,47 @@ export default function SpelunkyGame() {
         }
 
         c.save();
-        c.translate(0, -p.cameraY);
+        c.translate(ox - p.cameraX, -p.cameraY);
 
-        // Draw tiles
-        const startRow = Math.max(0, Math.floor(p.cameraY / T));
-        const endRow = Math.min(state.grid.length, Math.ceil((p.cameraY + H) / T) + 1);
+        // Draw visible tiles
+        const startCol = Math.max(0, Math.floor(p.cameraX / T) - 1);
+        const endCol = Math.min(COLS, Math.ceil((p.cameraX + HALF) / T) + 1);
+        const startRow = Math.max(0, Math.floor(p.cameraY / T) - 1);
+        const endRow = Math.min(ROWS, Math.ceil((p.cameraY + H) / T) + 1);
 
         for (let r = startRow; r < endRow; r++) {
-          for (let col = 0; col < state.grid[r].length; col++) {
+          if (!state.grid[r]) continue;
+          for (let col = startCol; col < endCol; col++) {
             const tile = state.grid[r][col];
-            const tx = caveOx + col * T;
-            const ty = r * T;
+            const tx = col * T, ty = r * T;
 
             if (tile === 1) {
               drawSprite(c, 'platform', tx, ty, T, T, { color: '#5a4a3a' });
-              // Rock texture
-              c.fillStyle = '#4a3a2a';
-              c.fillRect(tx + 2, ty + 2, T - 4, T - 4);
+              c.fillStyle = '#4a3a2a'; c.fillRect(tx + 2, ty + 2, T - 4, T - 4);
+              // Rock detail
               c.fillStyle = '#6a5a4a';
-              c.fillRect(tx + 4, ty + 4, 6, 4);
-              c.fillRect(tx + T - 12, ty + T - 10, 8, 5);
+              c.fillRect(tx + 3, ty + 3, 5, 3);
+              c.fillRect(tx + T - 9, ty + T - 7, 6, 4);
             } else if (tile === 2) {
-              // Spike
-              drawSprite(c, 'platform', tx, ty + T - 6, T, 6, { color: '#5a4a3a' });
-              for (let sx = 0; sx < T; sx += 8) {
+              // Spikes
+              for (let sx = 0; sx < T; sx += 6) {
                 c.beginPath();
                 c.moveTo(tx + sx, ty + T);
-                c.lineTo(tx + sx + 4, ty + T - 12);
-                c.lineTo(tx + sx + 8, ty + T);
-                c.fillStyle = '#cc3333';
-                c.fill();
+                c.lineTo(tx + sx + 3, ty + T - 8);
+                c.lineTo(tx + sx + 6, ty + T);
+                c.fillStyle = '#cc3333'; c.fill();
               }
             } else if (tile === 3) {
-              // Exit
-              c.fillStyle = '#00ff8833';
-              c.fillRect(tx, ty, T, T);
-              drawLabel(c, 'EXIT', tx + T / 2, ty + T / 2 + 4, { color: '#00ff88', font: '9px monospace' });
-              // Door frame
-              c.strokeStyle = '#00ff8866'; c.lineWidth = 2;
-              c.strokeRect(tx + 4, ty + 2, T - 8, T - 4);
+              c.fillStyle = '#00ff8833'; c.fillRect(tx, ty, T, T);
+              drawLabel(c, 'EXIT', tx + T / 2, ty + T / 2 + 3, { color: '#00ff88', font: '8px monospace' });
+              c.strokeStyle = '#00ff8866'; c.lineWidth = 2; c.strokeRect(tx + 2, ty + 2, T - 4, T - 4);
             }
+            // Air tiles: just background (already drawn)
           }
         }
 
         // Player
-        drawSprite(c, isMe ? 'player' : 'opponent', caveOx + p.x, p.y, PW, PH, {
+        drawSprite(c, isMe ? 'player' : 'opponent', p.x, p.y, PW, PH, {
           color: isMe ? '#00ff88' : '#ff4488', skin: pid,
         });
 

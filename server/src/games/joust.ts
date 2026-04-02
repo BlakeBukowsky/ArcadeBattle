@@ -84,12 +84,15 @@ export const joustGame: ServerGameModule = {
       p.iframeUntil = Date.now() + IFRAME_DURATION;
     }
 
-    function checkPlatformCollision(p: PlayerState): void {
+    function checkPlatformCollision(p: PlayerState, prevY: number): void {
       if (p.vy < 0) return; // only collide when falling
       for (const plat of platforms) {
+        const prevBottom = prevY + PLAYER_H;
+        const curBottom = p.y + PLAYER_H;
+        // Collide if feet crossed the platform top this frame
         if (
           p.x + PLAYER_W > plat.x && p.x < plat.x + plat.w &&
-          p.y + PLAYER_H >= plat.y && p.y + PLAYER_H <= plat.y + 12
+          prevBottom <= plat.y && curBottom >= plat.y
         ) {
           p.y = plat.y - PLAYER_H;
           p.vy = 0;
@@ -116,6 +119,7 @@ export const joustGame: ServerGameModule = {
 
         p.vy += GRAVITY;
         p.x += p.vx;
+        const prevY = p.y;
         p.y += p.vy;
 
         // Wrap horizontal
@@ -123,7 +127,7 @@ export const joustGame: ServerGameModule = {
         if (p.x > W) p.x = -PLAYER_W;
 
         // Platform collision
-        checkPlatformCollision(p);
+        checkPlatformCollision(p, prevY);
 
         // Vertical wrapping (prevents ceiling camping)
         if (p.y < -PLAYER_H) p.y = H;
