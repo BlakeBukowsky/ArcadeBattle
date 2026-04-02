@@ -99,7 +99,8 @@ export const mountainClimberGame: ServerGameModule = {
   info: {
     id: 'mountain-climber',
     name: 'Mountain Climber',
-    description: 'Race up! Jump, wall-jump, and dash through 15 increasingly difficult levels. A/D to move, W/Space to jump, Shift to dash.',
+    description: 'Celeste-style platformer race',
+    controls: 'A/D to move, W/Space to jump, Shift to dash. Wall-jump off edges. 15 levels + final race.',
     maxDuration: 180,
   },
 

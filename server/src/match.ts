@@ -98,6 +98,7 @@ export class MatchManager {
       gameId,
       gameName: gameModule.info.name,
       description: gameModule.info.description,
+      controls: gameModule.info.controls,
       score: match.score,
       round: match.currentRound + 1,
       totalRounds,

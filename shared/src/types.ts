@@ -66,8 +66,9 @@ export interface MatchEndData {
 export interface GameInfo {
   id: string;
   name: string;
-  description: string;
-  maxDuration: number; // seconds
+  description: string;  // short tagline: "Classic 1v1 paddle game"
+  controls: string;     // how to play: "W/S or Arrow Keys to move. First to 3 points wins."
+  maxDuration: number;  // seconds
 }
 
 // ── Game Plugin (Server) ──
@@ -96,6 +97,7 @@ export interface TransitionData {
   gameId: string;
   gameName: string;
   description: string;
+  controls: string;
   score: MatchScore;
   round: number;
   totalRounds: number;

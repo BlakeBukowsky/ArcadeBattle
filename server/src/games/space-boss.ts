@@ -59,7 +59,8 @@ export const spaceBossGame: ServerGameModule = {
   info: {
     id: 'space-boss',
     name: 'Space Boss',
-    description: 'Bullet hell space fight! Dodge dense patterns and shoot the boss. WASD to move, Space to shoot. 3 lives.',
+    description: 'Top-down bullet hell boss fight',
+    controls: 'WASD to move freely, Space to shoot up. Dodge dense bullet patterns. 3 lives.',
     maxDuration: 120,
   },
 

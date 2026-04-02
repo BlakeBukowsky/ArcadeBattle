@@ -34,7 +34,8 @@ export const volleyballGame: ServerGameModule = {
   info: {
     id: 'volleyball',
     name: 'Volleyball',
-    description: "Don't let the ball hit your floor! First to 5. Use A/D to move, W or Space to jump.",
+    description: '2D volleyball',
+    controls: 'A/D to move, W/Space to jump. Keep the ball off your floor. First to 5.',
     maxDuration: 120,
   },
 

@@ -46,7 +46,8 @@ export const rhythmGame: ServerGameModule = {
   info: {
     id: 'rhythm',
     name: 'Rhythm Rush',
-    description: 'Hit the arrows as they reach the line! Arrows speed up over time. Miss 3 and you lose. Use Arrow Keys or WASD.',
+    description: 'Rhythm arrow matching game',
+    controls: 'Arrow Keys or WASD. Hit arrows at the line. Miss 3 and you lose. No button mashing!',
     maxDuration: 120,
   },
 

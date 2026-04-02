@@ -124,7 +124,8 @@ export const tanksGame: ServerGameModule = {
   info: {
     id: 'tanks',
     name: 'Tanks',
-    description: 'Navigate the arena and shoot your opponent! Bullets bounce off walls. First hit wins. W/S to move, A/D to turn, Space to fire.',
+    description: 'Top-down tank arena',
+    controls: 'W/S to move, A/D to turn, Space to fire. Bullets bounce off walls. First hit wins.',
     maxDuration: 60,
   },
 

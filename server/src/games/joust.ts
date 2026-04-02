@@ -44,7 +44,8 @@ export const joustGame: ServerGameModule = {
   info: {
     id: 'joust',
     name: 'Joust',
-    description: 'Flap to fly, land on your opponent from above to score! First to 3. Use A/D to move, W or Space to flap.',
+    description: 'Jousting arena — stomp from above!',
+    controls: 'A/D to move, W/Space to flap. Land on opponent from above to score. First to 3.',
     maxDuration: 60,
   },
 

@@ -77,7 +77,8 @@ export const cowboyShootoutGame: ServerGameModule = {
   info: {
     id: 'cowboy-shootout',
     name: 'Cowboy Shootout',
-    description: 'Shoot bandits in the windows! Hold Right Click to peek from cover and aim. Getting shot stuns you for 3s. Most kills in 30s wins. Mouse aim, Left Click shoot, Right Click peek.',
+    description: 'Western shootout against bandits',
+    controls: 'Right Click to peek, Left Click to shoot, Mouse to aim. Most kills in 30s wins. Getting shot stuns for 3s.',
     maxDuration: 35,
   },
 

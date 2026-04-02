@@ -86,7 +86,8 @@ export const roundsGame: ServerGameModule = {
   info: {
     id: 'rounds',
     name: 'Rounds',
-    description: 'Arena shooter! Shoot your opponent across different maps. Bullets bounce once. First to 3 round wins! A/D to move, W to jump, Space to shoot.',
+    description: '2D arena shooter with bouncing bullets',
+    controls: 'A/D to move, W to jump, Space to shoot. Bullets bounce once. First to 3 round wins.',
     maxDuration: 120,
   },
 

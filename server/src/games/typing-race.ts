@@ -67,7 +67,8 @@ export const typingRaceGame: ServerGameModule = {
   info: {
     id: 'typing-race',
     name: 'Typing Race',
-    description: 'Type the sentences as fast as you can! Wrong character resets the current sentence. First to finish all 5 wins. Just type!',
+    description: 'Speed typing race',
+    controls: 'Just type! Wrong character stuns briefly. First to finish all sentences wins.',
     maxDuration: 90,
   },
 

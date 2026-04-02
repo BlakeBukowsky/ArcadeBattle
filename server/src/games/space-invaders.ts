@@ -44,7 +44,8 @@ export const spaceInvadersGame: ServerGameModule = {
   info: {
     id: 'space-invaders',
     name: 'Space Invaders',
-    description: 'Race to clear the alien wave first! Getting hit by an alien bullet means you lose. A/D to move, Space to shoot.',
+    description: 'Split-screen Space Invaders race',
+    controls: 'A/D to move, Space to shoot. Clear the wave first or survive longest.',
     maxDuration: 90,
   },
 

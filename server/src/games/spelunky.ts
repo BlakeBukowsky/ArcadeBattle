@@ -93,7 +93,8 @@ export const spelunkyGame: ServerGameModule = {
   info: {
     id: 'spelunky',
     name: 'Cave Dive',
-    description: 'Race through a dangerous cave! Avoid spikes, reach the exit first. A/D to move, W/Space to jump.',
+    description: 'Procedural cave race',
+    controls: 'A/D to move, W/Space to jump. Avoid spikes, reach the exit first.',
     maxDuration: 90,
   },
 

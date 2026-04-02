@@ -90,7 +90,8 @@ export const quiltGame: ServerGameModule = {
   info: {
     id: 'quilt',
     name: 'Quilt',
-    description: 'Fit all pieces into the grid! 3 quilts, getting harder. Click to place, R to rotate, scroll pieces with Q/E. First to finish all 3 wins.',
+    description: 'Piece-fitting puzzle race',
+    controls: 'Click to place, R to rotate, Q/E to browse pieces. Complete 3 quilts first.',
     maxDuration: 120,
   },
 

@@ -63,7 +63,8 @@ export const cityscapeGame: ServerGameModule = {
   info: {
     id: 'cityscape',
     name: 'Cityscape Race',
-    description: 'Race across rooftops! Jump between buildings, avoid enemies. Getting hit stuns you. First to the end wins! A/D to move, W/Space to jump.',
+    description: 'Rooftop platformer race',
+    controls: 'A/D to move, W/Space to jump. Avoid enemies (stun on hit). Race to the finish.',
     maxDuration: 90,
   },
 

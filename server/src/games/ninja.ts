@@ -80,7 +80,8 @@ export const ninjaGame: ServerGameModule = {
   info: {
     id: 'ninja',
     name: 'Ninja',
-    description: 'Dash and slash through enemies! Clear all rooms and exit. A/D to move, W to jump, Space to dash-attack.',
+    description: 'Side-scrolling ninja combat',
+    controls: 'A/D to move, W to jump, Space to dash-attack. Clear all enemies, exit the building.',
     maxDuration: 90,
   },
 

@@ -39,7 +39,8 @@ export const asteroidsGame: ServerGameModule = {
   info: {
     id: 'asteroids',
     name: 'Asteroids',
-    description: 'Classic Asteroids PvP! Shoot asteroids and your opponent. 3 lives. A/D to rotate, W to thrust, Space to shoot.',
+    description: 'PvP Asteroids arena',
+    controls: 'A/D to rotate, W to thrust, Space to shoot. 3 lives. Asteroids break into pieces.',
     maxDuration: 90,
   },
 

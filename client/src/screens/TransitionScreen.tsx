@@ -52,7 +52,8 @@ export default function TransitionScreen() {
 
       <div className="round-info">Round {data.round}</div>
       <h1 className="game-title">{data.gameName}</h1>
-      <p className="game-desc">{data.description}</p>
+      <p className="game-tagline">{data.description}</p>
+      <p className="game-controls">{data.controls}</p>
       <div className="countdown">Starting in {countdown}...</div>
     </div>
   );

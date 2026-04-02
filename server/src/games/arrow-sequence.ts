@@ -25,7 +25,8 @@ export const arrowSequenceGame: ServerGameModule = {
   info: {
     id: 'arrow-sequence',
     name: 'Arrow Sequence',
-    description: 'Match the arrow sequences! Arrows light up as you go. Wrong input resets the sequence. First to clear all 5 wins. Use Arrow Keys or WASD.',
+    description: 'Arrow pattern matching race',
+    controls: 'Arrow Keys or WASD. Match the sequence — arrows light up as you go. Wrong input resets. First to clear all 5 wins.',
     maxDuration: 60,
   },
 

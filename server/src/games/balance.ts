@@ -67,7 +67,8 @@ export const balanceGame: ServerGameModule = {
   info: {
     id: 'balance',
     name: 'Balance',
-    description: 'Navigate the narrow path! Fall off and you respawn after 1 second. First to reach the end wins. WASD to move.',
+    description: 'Navigate the narrow path',
+    controls: 'WASD to move. Fall off = respawn after 1 second. First to the end wins.',
     maxDuration: 60,
   },
 

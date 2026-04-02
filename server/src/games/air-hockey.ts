@@ -26,7 +26,8 @@ export const airHockeyGame: ServerGameModule = {
   info: {
     id: 'air-hockey',
     name: 'Air Hockey',
-    description: 'Smash the puck into your opponent\'s goal! First to 3. Move your mallet with the mouse.',
+    description: 'Top-down air hockey',
+    controls: 'Mouse to move mallet. Score by getting puck past opponent. First to 3 goals.',
     maxDuration: 90,
   },
 

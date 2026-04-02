@@ -39,7 +39,8 @@ export const laneRacerGame: ServerGameModule = {
   info: {
     id: 'lane-racer',
     name: 'Lane Racer',
-    description: 'Dodge traffic! Switch lanes to avoid obstacles. Speed increases over time. A/D or Arrow Keys to switch lanes.',
+    description: 'Lane-switching survival race',
+    controls: 'A/D or Arrow Keys to switch lanes. Dodge obstacles. Speed increases over time.',
     maxDuration: 120,
   },
 

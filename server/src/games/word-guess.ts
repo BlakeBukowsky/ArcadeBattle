@@ -110,7 +110,8 @@ export const wordGuessGame: ServerGameModule = {
   info: {
     id: 'word-guess',
     name: 'Word Guess',
-    description: 'Speed Wordle! Guess the 5-letter word. Green = right spot, Yellow = wrong spot. No turns — just type fast! First to guess wins.',
+    description: 'Speed Wordle',
+    controls: 'Type letters, Enter to submit, Backspace to delete. Green = right spot, Yellow = wrong spot.',
     maxDuration: 90,
   },
 

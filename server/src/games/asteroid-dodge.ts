@@ -39,7 +39,8 @@ export const asteroidDodgeGame: ServerGameModule = {
   info: {
     id: 'asteroid-dodge',
     name: 'Asteroid Dodge',
-    description: 'Dodge the asteroids! Same pattern for both players. Whoever survives longest wins. A/D or Arrow Keys to move.',
+    description: 'Split-screen asteroid survival',
+    controls: 'A/D or Arrow Keys to dodge. Same pattern for both. Last alive wins.',
     maxDuration: 120,
   },
 

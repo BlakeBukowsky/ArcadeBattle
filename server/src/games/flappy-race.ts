@@ -43,7 +43,8 @@ export const flappyRaceGame: ServerGameModule = {
   info: {
     id: 'flappy-race',
     name: 'Flappy Race',
-    description: 'Flappy Bird race! Same pipes for both players. Whoever survives longest wins. Press W, Space, or Up Arrow to flap.',
+    description: 'Flappy Bird race',
+    controls: 'W/Space/Up to flap. Same pipes for both. Last alive wins.',
     maxDuration: 120,
   },
 

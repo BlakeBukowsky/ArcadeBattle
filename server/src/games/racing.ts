@@ -68,7 +68,8 @@ export const racingGame: ServerGameModule = {
   info: {
     id: 'racing',
     name: 'Racing',
-    description: 'Race around the track! First to 3 laps wins. W to accelerate, S to brake, A/D to turn, Shift to drift.',
+    description: 'Top-down circuit racing',
+    controls: 'W accelerate, S brake, A/D turn, Shift drift. First to 3 laps wins.',
     maxDuration: 120,
   },
 

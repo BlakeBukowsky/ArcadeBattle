@@ -131,7 +131,8 @@ export const controlPanelGame: ServerGameModule = {
   info: {
     id: 'control-panel',
     name: 'Control Panel',
-    description: 'Follow the commands! Press buttons, pull levers, set sliders, turn knobs. First to complete all commands wins!',
+    description: 'Sci-fi command console race',
+    controls: 'Click buttons/levers, click sliders to set values, click knobs to cycle. Follow each command.',
     maxDuration: 60,
   },
 

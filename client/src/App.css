@@ -446,10 +446,22 @@
   color: #00ff88;
 }
 
-.game-desc {
-  font-size: 1.1rem;
+.game-tagline {
+  font-size: 1.2rem;
   color: #aaa;
-  max-width: 400px;
+  max-width: 500px;
+  font-style: italic;
+}
+
+.game-controls {
+  font-size: 0.95rem;
+  color: #ccc;
+  max-width: 500px;
+  background: #ffffff08;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  border: 1px solid #333;
+  line-height: 1.4;
 }
 
 .prev-result {
@@ -473,6 +485,22 @@
 
 .playing-screen {
   padding: 0;
+  position: relative;
+}
+
+.controls-sidebar {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000000aa;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #888;
+  font-family: monospace;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .game-container {

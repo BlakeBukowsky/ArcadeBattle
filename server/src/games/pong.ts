@@ -23,7 +23,8 @@ export const pongGame: ServerGameModule = {
   info: {
     id: 'pong',
     name: 'Pong',
-    description: 'Classic paddle game — first to 3 wins! Ball speeds up each hit. W/S or Arrow Keys to move.',
+    description: 'Classic 1v1 paddle game',
+    controls: 'W/S or Arrow Keys to move. First to 3 points. Ball speeds up each hit.',
     maxDuration: 90,
   },
 

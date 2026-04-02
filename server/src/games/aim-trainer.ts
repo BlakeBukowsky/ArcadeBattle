@@ -27,7 +27,8 @@ export const aimTrainerGame: ServerGameModule = {
   info: {
     id: 'aim-trainer',
     name: 'Aim Trainer',
-    description: 'Click the targets! Most hits in 15 seconds wins. You can see your opponent\'s cursor. Use your mouse to click.',
+    description: 'Target clicking speed challenge',
+    controls: 'Mouse to aim, Click to shoot. Most hits in 15 seconds wins. Opponent cursor visible.',
     maxDuration: 20,
   },
 

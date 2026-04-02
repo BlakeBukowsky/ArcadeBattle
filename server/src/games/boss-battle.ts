@@ -62,7 +62,8 @@ export const bossBattleGame: ServerGameModule = {
   info: {
     id: 'boss-battle',
     name: 'Boss Battle',
-    description: 'Bullet hell boss fight! Dodge attacks and shoot the boss. First to defeat the boss wins. 3 lives. A/D to move, W to jump, Space to shoot.',
+    description: 'Bullet hell boss fight',
+    controls: 'A/D to move, W to jump, Space to shoot. Dodge boss attacks. 3 lives. First to kill boss wins.',
     maxDuration: 120,
   },
 

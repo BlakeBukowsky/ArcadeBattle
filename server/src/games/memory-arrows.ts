@@ -33,7 +33,8 @@ export const memoryArrowsGame: ServerGameModule = {
   info: {
     id: 'memory-arrows',
     name: 'Memory Arrows',
-    description: 'Watch the arrow sequence, then repeat it from memory! Each round adds one more arrow. Wrong input = eliminated. Arrow Keys or WASD.',
+    description: 'Simon-style memory game with arrows',
+    controls: 'Arrow Keys or WASD. Watch the sequence, then repeat from memory. Wrong = eliminated.',
     maxDuration: 120,
   },
 
