@@ -20,6 +20,8 @@ interface GameRegistry {
   getGamesForSet(setId: string): ServerGameModule[];
 }
 
+const MIN_ROUND_DURATION = 500; // ms — prevent instant round endings from first-tick collisions
+
 interface ActiveMatch {
   lobbyId: string;
   players: [string, string];
@@ -30,6 +32,7 @@ interface ActiveMatch {
   gameOrder: string[];
   currentGame: GameInstance | null;
   emitterCleanup: (() => void) | null;
+  roundStartTime: number;
 }
 
 export class MatchManager {
@@ -74,6 +77,7 @@ export class MatchManager {
       gameOrder,
       currentGame: null,
       emitterCleanup: null,
+      roundStartTime: 0,
     };
 
     this.matches.set(lobbyId, match);
@@ -136,6 +140,7 @@ export class MatchManager {
       },
     };
 
+    match.roundStartTime = Date.now();
     match.currentGame = gameModule.create(ctx);
     this.io.to(match.lobbyId).emit('match:roundStart', { gameId });
   }
@@ -143,6 +148,13 @@ export class MatchManager {
   private endRound(match: ActiveMatch, winnerId: string): void {
     // Guard against double-call (game logic might fire endRound after cleanup)
     if (!match.currentGame && !match.emitterCleanup) return;
+
+    // Prevent instant round endings from first-tick collisions
+    const elapsed = Date.now() - match.roundStartTime;
+    if (elapsed < MIN_ROUND_DURATION) {
+      setTimeout(() => this.endRound(match, winnerId), MIN_ROUND_DURATION - elapsed);
+      return;
+    }
 
     if (match.emitterCleanup) {
       match.emitterCleanup();
@@ -185,6 +197,21 @@ export class MatchManager {
     this.matches.delete(match.lobbyId);
     this.playerToLobby.delete(match.players[0]);
     this.playerToLobby.delete(match.players[1]);
+  }
+
+  /** Resync a reconnected player — send them current game state + roundStart */
+  resyncPlayer(playerId: string, socketId: string): void {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) return;
+    const match = this.matches.get(lobbyId);
+    if (!match || !match.currentGame) return;
+
+    const gameId = match.gameOrder[match.currentRound];
+    // Re-send roundStart so the client switches to the playing screen
+    this.io.to(socketId).emit('match:roundStart', { gameId });
+    // Send current full game state directly to this player
+    const state = match.currentGame.getState();
+    this.io.to(socketId).emit('game:state', { _full: true, ...(state as Record<string, unknown>) });
   }
 
   handleGameInput(playerId: string, data: unknown): void {

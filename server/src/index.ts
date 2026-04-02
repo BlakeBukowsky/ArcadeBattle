@@ -59,13 +59,15 @@ io.on('connection', (socket) => {
     clearTimeout(pendingTimer);
     disconnectTimers.delete(userId);
     console.log(`Player reconnected: ${displayName} (${userId}) — cancelled disconnect`);
+  }
 
-    // Re-join their lobby room if they were in one
-    const lobbyId = lobbyManager.getPlayerLobby(userId);
-    if (lobbyId) {
-      socket.join(lobbyId);
-      lobbyManager.emitStateToAll(lobbyId, io);
-    }
+  // Always re-join lobby room and resync state (handles Socket.IO internal reconnections)
+  const lobbyId = lobbyManager.getPlayerLobby(userId);
+  if (lobbyId) {
+    socket.join(lobbyId);
+    lobbyManager.emitStateToAll(lobbyId, io);
+    // If a match is active, resync game state to this player
+    matchManager.resyncPlayer(userId, socket.id);
   }
 
   // Send identity to client
