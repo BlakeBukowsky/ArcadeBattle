@@ -152,7 +152,11 @@ export class MatchManager {
     // Prevent instant round endings from first-tick collisions
     const elapsed = Date.now() - match.roundStartTime;
     if (elapsed < MIN_ROUND_DURATION) {
-      setTimeout(() => this.endRound(match, winnerId), MIN_ROUND_DURATION - elapsed);
+      const roundAtDefer = match.currentRound;
+      setTimeout(() => {
+        // Only fire if we're still on the same round (prevents killing the next round)
+        if (match.currentRound === roundAtDefer) this.endRound(match, winnerId);
+      }, MIN_ROUND_DURATION - elapsed);
       return;
     }
 

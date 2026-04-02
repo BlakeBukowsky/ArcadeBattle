@@ -14,13 +14,14 @@ import { rhythmGame } from './rhythm.js';
 import { typingRaceGame } from './typing-race.js';
 import { memoryArrowsGame } from './memory-arrows.js';
 import { tanksGame } from './tanks.js';
-import { laneRacerGame } from './lane-racer.js';
+// import { laneRacerGame } from './lane-racer.js';
 import { asteroidsGame } from './asteroids.js';
 // mountain-climber removed
 // import { mountainClimberGame } from './mountain-climber.js';
 // ninja removed for rework
 // import { ninjaGame } from './ninja.js';
-import { bossBattleGame } from './boss-battle.js';
+// boss-battle removed
+// import { bossBattleGame } from './boss-battle.js';
 import { spaceBossGame } from './space-boss.js';
 import { spelunkyGame } from './spelunky.js';
 import { racingGame } from './racing.js';
@@ -84,11 +85,11 @@ gameRegistry.register(rhythmGame);
 gameRegistry.register(typingRaceGame);
 gameRegistry.register(memoryArrowsGame);
 gameRegistry.register(tanksGame);
-gameRegistry.register(laneRacerGame);
+// gameRegistry.register(laneRacerGame);
 gameRegistry.register(asteroidsGame);
 // gameRegistry.register(mountainClimberGame);
 // gameRegistry.register(ninjaGame);
-gameRegistry.register(bossBattleGame);
+// gameRegistry.register(bossBattleGame);
 gameRegistry.register(spaceBossGame);
 gameRegistry.register(spelunkyGame);
 gameRegistry.register(racingGame);
@@ -117,7 +118,7 @@ gameRegistry.registerSet({
     'volleyball',
     'asteroid-dodge',
     'flappy-race',
-    'lane-racer',
+
     'arrow-sequence',
     'typing-race',
     'memory-arrows',
@@ -136,7 +137,7 @@ gameRegistry.registerSet({
     'volleyball',
     'asteroid-dodge',
     'flappy-race',
-    'lane-racer',
+
     'arrow-sequence',
     'typing-race',
     'memory-arrows',
@@ -171,9 +172,8 @@ gameRegistry.registerSet({
     'typing-race',
     'memory-arrows',
     'tanks',
-    'lane-racer',
+
     'asteroids',
-    'boss-battle',
     'space-boss',
     'spelunky',
     'racing',

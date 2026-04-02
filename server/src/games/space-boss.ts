@@ -6,30 +6,30 @@ const MOVE_SPEED = 4;
 const BULLET_SPEED = 9;
 const FIRE_COOLDOWN = 120;
 const BOSS_W = 80, BOSS_H = 40;
-const BOSS_MAX_HP = 120;
+const BOSS_MAX_HP = 90;
 const PLAYER_LIVES = 3;
-const IFRAME_DURATION = 1200;
+const IFRAME_DURATION = 1500;
 const PROJ_R = 3;
 const TICK_RATE = 1000 / 60;
 
 type Phase = 'idle' | 'telegraph' | 'spiral' | 'rain' | 'wave' | 'cross' | 'shotgun';
 
 const PATTERN: { phase: Phase; duration: number }[] = [
-  { phase: 'idle', duration: 40 },
-  { phase: 'telegraph', duration: 30 },
-  { phase: 'spiral', duration: 120 },
-  { phase: 'idle', duration: 30 },
-  { phase: 'telegraph', duration: 30 },
-  { phase: 'rain', duration: 100 },
-  { phase: 'idle', duration: 30 },
-  { phase: 'telegraph', duration: 30 },
-  { phase: 'wave', duration: 110 },
-  { phase: 'idle', duration: 30 },
-  { phase: 'telegraph', duration: 30 },
-  { phase: 'cross', duration: 90 },
-  { phase: 'idle', duration: 30 },
-  { phase: 'telegraph', duration: 30 },
-  { phase: 'shotgun', duration: 80 },
+  { phase: 'idle', duration: 55 },
+  { phase: 'telegraph', duration: 35 },
+  { phase: 'spiral', duration: 100 },
+  { phase: 'idle', duration: 50 },
+  { phase: 'telegraph', duration: 35 },
+  { phase: 'rain', duration: 80 },
+  { phase: 'idle', duration: 50 },
+  { phase: 'telegraph', duration: 35 },
+  { phase: 'wave', duration: 90 },
+  { phase: 'idle', duration: 50 },
+  { phase: 'telegraph', duration: 35 },
+  { phase: 'cross', duration: 75 },
+  { phase: 'idle', duration: 50 },
+  { phase: 'telegraph', duration: 35 },
+  { phase: 'shotgun', duration: 65 },
 ];
 
 interface BossProj { x: number; y: number; vx: number; vy: number; }
@@ -112,7 +112,7 @@ export const spaceBossGame: ServerGameModule = {
         if (!p.alive) continue;
         const projs = state.bossProjectiles[pid];
 
-        if (boss.phase === 'spiral' && boss.phaseTimer % 4 === 0) {
+        if (boss.phase === 'spiral' && boss.phaseTimer % 5 === 0) {
           const arms = 3;
           for (let a = 0; a < arms; a++) {
             const angle = (tick * 0.08) + (a / arms) * Math.PI * 2;
@@ -120,13 +120,13 @@ export const spaceBossGame: ServerGameModule = {
           }
         }
 
-        if (boss.phase === 'rain' && boss.phaseTimer % 3 === 0) {
+        if (boss.phase === 'rain' && boss.phaseTimer % 4 === 0) {
           const rx = Math.random() * HALF_W;
           projs.push({ x: rx, y: -5, vx: (Math.random() - 0.5) * 0.5, vy: 3 + Math.random() * 2 });
           projs.push({ x: rx + 30, y: -5, vx: (Math.random() - 0.5) * 0.5, vy: 2.5 + Math.random() * 2 });
         }
 
-        if (boss.phase === 'wave' && boss.phaseTimer % 8 === 0) {
+        if (boss.phase === 'wave' && boss.phaseTimer % 10 === 0) {
           const numBullets = 16;
           for (let i = 0; i < numBullets; i++) {
             const angle = (i / numBullets) * Math.PI * 2;
@@ -135,7 +135,7 @@ export const spaceBossGame: ServerGameModule = {
           }
         }
 
-        if (boss.phase === 'cross' && boss.phaseTimer % 5 === 0) {
+        if (boss.phase === 'cross' && boss.phaseTimer % 7 === 0) {
           const offsets = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
           const rot = tick * 0.03;
           for (const off of offsets) {

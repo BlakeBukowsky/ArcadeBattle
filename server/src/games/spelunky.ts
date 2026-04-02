@@ -6,14 +6,17 @@ const GRAVITY = 0.4;
 const MOVE_SPEED = 3;
 const JUMP_POWER = -8;
 const TILE = 24;
-const CAVE_COLS = 25, CAVE_ROWS = 40;
+const CAVE_COLS = 30, CAVE_ROWS = 50;
+const ENEMY_W = 10, ENEMY_H = 12, ENEMY_SPEED = 1;
 const CAVE_W = CAVE_COLS * TILE;
 const CAVE_H = CAVE_ROWS * TILE;
 const TICK_RATE = 1000 / 60;
 
 type Tile = 0 | 1 | 2 | 3; // air, solid, spike, exit
 
-function generateCave(): { grid: Tile[][]; exitR: number; exitC: number } {
+interface EnemyDef { x: number; y: number; patrolL: number; patrolR: number; }
+
+function generateCave(): { grid: Tile[][]; exitR: number; exitC: number; enemies: EnemyDef[] } {
   // Start solid, then carve passable rooms connected by walkable tunnels
   const grid: Tile[][] = [];
   for (let r = 0; r < CAVE_ROWS; r++) grid.push(new Array(CAVE_COLS).fill(1) as Tile[]);
@@ -106,7 +109,25 @@ function generateCave(): { grid: Tile[][]; exitR: number; exitC: number } {
     }
   }
 
-  return { grid, exitR, exitC };
+  // Spawn enemies on corridor floors
+  const enemies: EnemyDef[] = [];
+  for (let f = 1; f < numFloors; f++) {
+    const corridorR = 4 + f * FLOOR_H + 1;
+    const floorR = Math.min(CAVE_ROWS - 1, corridorR + 3);
+    if (Math.random() < 0.6) {
+      // Find a walkable spot
+      const ec = 3 + Math.floor(Math.random() * (CAVE_COLS - 6));
+      if (grid[corridorR + 2]?.[ec] === 0 && grid[floorR]?.[ec] === 1) {
+        // Find patrol bounds (leftmost and rightmost air on this floor)
+        let patrolL = ec, patrolR = ec;
+        while (patrolL > 1 && grid[corridorR + 2][patrolL - 1] === 0 && grid[floorR][patrolL - 1] === 1) patrolL--;
+        while (patrolR < CAVE_COLS - 2 && grid[corridorR + 2][patrolR + 1] === 0 && grid[floorR][patrolR + 1] === 1) patrolR++;
+        enemies.push({ x: ec * TILE + TILE / 2, y: (corridorR + 2) * TILE + TILE - ENEMY_H, patrolL: patrolL * TILE, patrolR: patrolR * TILE + TILE });
+      }
+    }
+  }
+
+  return { grid, exitR, exitC, enemies };
 }
 
 interface PlayerState {
@@ -115,8 +136,11 @@ interface PlayerState {
   cameraX: number; cameraY: number;
 }
 
+interface EnemyState { x: number; y: number; dir: number; patrolL: number; patrolR: number; }
+
 interface SpelunkyState {
   players: { [id: string]: PlayerState };
+  enemies: EnemyState[];
   grid: Tile[][];
   tileSize: number;
   caveWidth: number; caveHeight: number;
@@ -136,7 +160,7 @@ export const spelunkyGame: ServerGameModule = {
   create(ctx: MatchContext): GameInstance {
     const [p1, p2] = ctx.players;
     let running = true;
-    const { grid, exitR, exitC } = generateCave();
+    const { grid, exitR, exitC, enemies: enemyDefs } = generateCave();
     const inputs: { [id: string]: { left: boolean; right: boolean; jump: boolean } } = {
       [p1]: { left: false, right: false, jump: false },
       [p2]: { left: false, right: false, jump: false },
@@ -147,6 +171,7 @@ export const spelunkyGame: ServerGameModule = {
         [p1]: { x: CAVE_W / 2 - PW / 2, y: TILE + 4, vx: 0, vy: 0, grounded: false, alive: true, completed: false, cameraX: 0, cameraY: 0 },
         [p2]: { x: CAVE_W / 2 - PW / 2, y: TILE + 4, vx: 0, vy: 0, grounded: false, alive: true, completed: false, cameraX: 0, cameraY: 0 },
       },
+      enemies: enemyDefs.map((e) => ({ x: e.x, y: e.y, dir: 1, patrolL: e.patrolL, patrolR: e.patrolR })),
       grid, tileSize: TILE,
       caveWidth: CAVE_W, caveHeight: CAVE_H,
       canvasWidth: W, canvasHeight: H,
@@ -229,11 +254,31 @@ export const spelunkyGame: ServerGameModule = {
         resolveCollisions(p);
         if (checkHazards(p, pid)) return;
 
+        // Enemy collision
+        for (const e of state.enemies) {
+          const dx = (p.x + PW / 2) - e.x;
+          const dy = (p.y + PH / 2) - e.y;
+          if (Math.abs(dx) < (PW + ENEMY_W) / 2 && Math.abs(dy) < (PH + ENEMY_H) / 2) {
+            p.alive = false;
+            running = false;
+            state.winner = pid === p1 ? p2 : p1;
+            ctx.emit('game:state', state);
+            ctx.endRound(state.winner);
+            return;
+          }
+        }
+
         // Camera
         const tcx = p.x - HALF_W / 2;
         const tcy = p.y - H * 0.4;
         p.cameraX += (Math.max(0, Math.min(CAVE_W - HALF_W, tcx)) - p.cameraX) * 0.1;
         p.cameraY += (Math.max(0, Math.min(CAVE_H - H, tcy)) - p.cameraY) * 0.1;
+      }
+
+      // Move enemies
+      for (const e of state.enemies) {
+        e.x += e.dir * ENEMY_SPEED;
+        if (e.x <= e.patrolL || e.x >= e.patrolR) e.dir *= -1;
       }
 
       ctx.emit('game:state', state);

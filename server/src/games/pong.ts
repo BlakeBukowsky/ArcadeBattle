@@ -83,6 +83,7 @@ export const pongGame: ServerGameModule = {
       }
 
       // Move ball
+      const prevBallX = state.ball.x;
       state.ball.x += state.ball.vx;
       state.ball.y += state.ball.vy;
 
@@ -96,12 +97,11 @@ export const pongGame: ServerGameModule = {
         state.ball.vy = -Math.abs(state.ball.vy);
       }
 
-      // Left paddle (p1) collision
+      // Left paddle (p1) collision — sweep: ball crossed paddle face this frame
       const p1x = 10 + PADDLE_W;
       if (
         state.ball.vx < 0 &&
-        state.ball.x <= p1x &&
-        state.ball.x >= 10 &&
+        prevBallX >= p1x && state.ball.x <= p1x &&
         state.ball.y + BALL_SIZE >= state.paddles[p1] &&
         state.ball.y <= state.paddles[p1] + PADDLE_H
       ) {
@@ -113,12 +113,11 @@ export const pongGame: ServerGameModule = {
         state.ball.x = p1x + 1;
       }
 
-      // Right paddle (p2) collision
+      // Right paddle (p2) collision — sweep: ball crossed paddle face this frame
       const p2x = W - 10 - PADDLE_W;
       if (
         state.ball.vx > 0 &&
-        state.ball.x + BALL_SIZE >= p2x &&
-        state.ball.x + BALL_SIZE <= W - 10 &&
+        prevBallX + BALL_SIZE <= p2x && state.ball.x + BALL_SIZE >= p2x &&
         state.ball.y + BALL_SIZE >= state.paddles[p2] &&
         state.ball.y <= state.paddles[p2] + PADDLE_H
       ) {

@@ -3,15 +3,17 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
-const PW = 12, PH = 16;
+const PW = 12, PH = 16, ENEMY_W = 10, ENEMY_H = 12;
 type Tile = 0 | 1 | 2 | 3;
 
+interface EnemyState { x: number; y: number; dir: number; }
 interface PlayerState {
   x: number; y: number; alive: boolean; completed: boolean;
   cameraX: number; cameraY: number;
 }
 interface SpelunkyState {
   players: Record<string, PlayerState>;
+  enemies: EnemyState[];
   grid: Tile[][];
   tileSize: number; caveWidth: number; caveHeight: number;
   canvasWidth: number; canvasHeight: number; winner: string | null;
@@ -113,6 +115,17 @@ export default function SpelunkyGame() {
               c.strokeStyle = '#00ff8866'; c.lineWidth = 2; c.strokeRect(tx + 2, ty + 2, T - 4, T - 4);
             }
             // Air tiles: just background (already drawn)
+          }
+        }
+
+        // Enemies
+        if (state.enemies) {
+          for (const e of state.enemies) {
+            drawSprite(c, 'opponent', e.x - ENEMY_W / 2, e.y - ENEMY_H, ENEMY_W, ENEMY_H, { color: '#ff6644' });
+            // Eyes
+            c.fillStyle = '#fff';
+            c.fillRect(e.x - 3, e.y - ENEMY_H + 3, 2, 2);
+            c.fillRect(e.x + 1, e.y - ENEMY_H + 3, 2, 2);
           }
         }
 
