@@ -140,6 +140,9 @@ export class MatchManager {
   }
 
   private endRound(match: ActiveMatch, winnerId: string): void {
+    // Guard against double-call (game logic might fire endRound after cleanup)
+    if (!match.currentGame && !match.emitterCleanup) return;
+
     if (match.emitterCleanup) {
       match.emitterCleanup();
       match.emitterCleanup = null;

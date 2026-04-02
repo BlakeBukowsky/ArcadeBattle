@@ -163,9 +163,16 @@ export default function RhythmGame() {
         drawLabel(c, `Hits: ${p.hits}`, ox + 10, 44, { color: '#ffffff', font: '14px monospace', align: 'left' });
 
         // Misses as hearts
-        let missDisplay = '';
-        for (let i = 0; i < 3; i++) missDisplay += i < p.misses ? 'X ' : '\u2665 ';
-        drawLabel(c, missDisplay.trim(), ox + HALF - 10, 44, { color: p.misses >= 2 ? '#ff4444' : '#ff8888', font: '14px monospace', align: 'right' });
+        // Health — large and prominent
+        const heartsY = 38;
+        for (let i = 0; i < 3; i++) {
+          const hx = ox + HALF - 20 - i * 22;
+          const lost = i < p.misses;
+          drawLabel(c, lost ? 'X' : '\u2665', hx, heartsY, {
+            color: lost ? '#ff4444' : '#ff4488',
+            font: '22px monospace',
+          });
+        }
 
         if (!p.alive) {
           c.fillStyle = '#00000088'; c.fillRect(ox, 0, HALF, H);

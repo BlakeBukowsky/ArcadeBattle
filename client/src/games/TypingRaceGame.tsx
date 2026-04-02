@@ -3,7 +3,7 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
-interface PlayerState { currentSentence: number; inputIndex: number; completed: boolean; lastCorrect: boolean; }
+interface PlayerState { currentSentence: number; inputIndex: number; completed: boolean; lastCorrect: boolean; stunned?: boolean; }
 interface TypingRaceState {
   players: Record<string, PlayerState>;
   sentences: string[];
@@ -84,6 +84,13 @@ export default function TypingRaceGame() {
         if (isMe && showFlash) {
           c.fillStyle = flashRef.current.correct ? '#00ff8810' : '#ff448825';
           c.fillRect(ox, 0, HALF, H);
+        }
+
+        // Stun overlay
+        if (p.stunned) {
+          c.fillStyle = '#ff440022';
+          c.fillRect(ox, 0, HALF, H);
+          drawLabel(c, 'STUNNED!', ox + HALF / 2, H / 2, { color: '#ff4444', font: '20px monospace' });
         }
 
         drawLabel(c, isMe ? 'YOU' : 'OPPONENT', ox + HALF / 2, 22, { color: '#ffffff88', font: '14px monospace' });

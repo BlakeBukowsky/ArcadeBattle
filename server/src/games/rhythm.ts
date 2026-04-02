@@ -8,9 +8,9 @@ const HIT_ZONE_Y = H - 80;
 const HIT_WINDOW = 40; // pixels above/below hit zone to count as a hit
 const BASE_SPEED = 2.5;
 const SPEED_INCREASE = 0.0005; // per tick — slow speed ramp
-const SPAWN_INTERVAL_START = 60; // ticks between spawns
-const SPAWN_INTERVAL_MIN = 14; // arrows get much denser
-const SPAWN_INTERVAL_DECREASE = 0.04; // density ramps faster than speed
+const SPAWN_INTERVAL_START = 65; // ticks between spawns
+const SPAWN_INTERVAL_MIN = 22; // arrows get denser but not overwhelming
+const SPAWN_INTERVAL_DECREASE = 0.025; // slower density ramp
 const MAX_MISSES = 3;
 const TICK_RATE = 1000 / 60;
 
@@ -186,8 +186,16 @@ export const rhythmGame: ServerGameModule = {
             p.lastHitResult = 'good';
           }
           p.lastHitTime = tickCount;
+        } else {
+          // No matching arrow near hit zone — penalize mashing
+          p.misses++;
+          p.lastHitResult = 'miss';
+          p.lastHitTime = tickCount;
+
+          if (p.misses >= MAX_MISSES) {
+            p.alive = false;
+          }
         }
-        // No matching arrow in range — just ignore (don't penalize random presses)
       },
       getState() { return state; },
       cleanup(): void {

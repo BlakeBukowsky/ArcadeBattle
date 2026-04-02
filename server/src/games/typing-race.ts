@@ -1,7 +1,7 @@
 import type { ServerGameModule, MatchContext, GameInstance } from '@arcade-battle/shared';
 
 const SENTENCE_COUNT = 3;
-const STUN_DURATION = 1500; // ms freeze on wrong input
+const STUN_DURATION = 500; // ms freeze on wrong input
 const TICK_RATE = 1000 / 15;
 
 const SENTENCES = [
@@ -92,6 +92,11 @@ export const typingRaceGame: ServerGameModule = {
 
     const interval = setInterval(() => {
       if (!running) return;
+      // Update stunned flag for clients
+      const now = Date.now();
+      for (const pid of ctx.players) {
+        (state.players[pid] as PlayerState & { stunned: boolean }).stunned = now < state.players[pid].stunUntil;
+      }
       ctx.emit('game:state', state);
     }, TICK_RATE);
 
@@ -104,8 +109,10 @@ export const typingRaceGame: ServerGameModule = {
         const p = state.players[playerId];
         if (!p || p.completed) return;
 
-        // Stunned — ignore input
-        if (Date.now() < p.stunUntil) return;
+        // Stunned — ignore input but don't permanently lock
+        const now = Date.now();
+        if (p.stunUntil > 0 && now < p.stunUntil) return;
+        if (p.stunUntil > 0) p.stunUntil = 0; // clear expired stun
 
         const currentSentence = state.sentences[p.currentSentence];
         const expected = currentSentence[p.inputIndex];
@@ -129,10 +136,12 @@ export const typingRaceGame: ServerGameModule = {
             }
           }
         } else {
-          // Wrong — stun instead of reset
+          // Wrong — brief visual stun + small time penalty (can't type during stun)
           p.lastCorrect = false;
           p.stunUntil = Date.now() + STUN_DURATION;
         }
+
+        ctx.emit('game:state', state);
 
         ctx.emit('game:state', state);
       },
