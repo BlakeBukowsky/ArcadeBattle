@@ -4,7 +4,10 @@ import { drawSprite, drawLabel, drawBackground } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 import { PositionPredictor } from '../lib/prediction.js';
 
-const PADDLE_W = 12, PADDLE_H = 80, BALL_SIZE = 10, PADDLE_SPEED = 8;
+const PADDLE_W = 12, PADDLE_H = 80, BALL_SIZE = 10;
+// Server runs at 60fps with PADDLE_SPEED=8. Client render is also 60fps.
+// Prediction applies input per-frame, matching the server tick rate.
+const PADDLE_SPEED = 8;
 
 interface PongState {
   ball: { x: number; y: number; vx: number; vy: number };
@@ -21,12 +24,16 @@ export default function PongGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const interpRef = useRef(new StateBuffer<PongState>()).current;
   const keysRef = useRef({ up: false, down: false });
-  const paddlePredictor = useRef(new PositionPredictor(0.25)).current;
+  const paddlePredictor = useRef(new PositionPredictor(0.4)).current;
+
+  // Track raw (non-interpolated) state for own paddle prediction
+  const rawStateRef = useRef<PongState | null>(null);
 
   useEffect(() => {
     socket.on('game:state', (data: unknown) => {
       const updated = applyStateUpdate(interpRef.latest(), data);
       interpRef.push(updated);
+      rawStateRef.current = updated;
       if (updated.paddles[myId] !== undefined) {
         paddlePredictor.setServerPosition(0, updated.paddles[myId]);
       }

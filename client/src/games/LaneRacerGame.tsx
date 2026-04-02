@@ -72,16 +72,19 @@ export default function LaneRacerGame() {
         c.fillStyle = '#2a2a2a';
         c.fillRect(ox, 0, HALF, H);
 
-        // Lane dividers (scrolling dashes)
-        c.strokeStyle = '#555'; c.lineWidth = 2; c.setLineDash([20, 20]);
+        // Lane dividers (scrolling dashes — moving downward like the road)
+        c.strokeStyle = '#555'; c.lineWidth = 2;
+        c.setLineDash([20, 20]);
+        c.lineDashOffset = -(scrollY % 40);
         for (let i = 1; i < LANES; i++) {
           const lx = ox + i * laneW;
           c.beginPath();
-          c.moveTo(lx, -(scrollY % 40));
-          c.lineTo(lx, H + 40);
+          c.moveTo(lx, 0);
+          c.lineTo(lx, H);
           c.stroke();
         }
         c.setLineDash([]);
+        c.lineDashOffset = 0;
 
         // Road edges
         c.fillStyle = '#ffaa00';

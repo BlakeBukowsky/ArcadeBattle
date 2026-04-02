@@ -101,9 +101,22 @@ export default function RhythmGame() {
           c.beginPath(); c.moveTo(lanesX + i * LANE_WIDTH, 0); c.lineTo(lanesX + i * LANE_WIDTH, H); c.stroke();
         }
 
-        // Hit zone
+        // Hit zone — show the timing window bands
+        const HIT_W = 80; // total window (40 above + 40 below)
+        const PERFECT_W = 16; // perfect zone
+        // Outer window (good zone)
+        c.fillStyle = '#ffffff08';
+        c.fillRect(lanesX, state.hitZoneY - HIT_W / 2, LANE_TOTAL, HIT_W);
+        // Inner window (perfect zone)
+        c.fillStyle = '#ffffff08';
+        c.fillRect(lanesX, state.hitZoneY - PERFECT_W / 2, LANE_TOTAL, PERFECT_W);
+        // Center line
         c.strokeStyle = '#ffffff44'; c.lineWidth = 2;
         c.beginPath(); c.moveTo(lanesX, state.hitZoneY); c.lineTo(lanesX + LANE_TOTAL, state.hitZoneY); c.stroke();
+        // Window edge lines
+        c.strokeStyle = '#ffffff15'; c.lineWidth = 1;
+        c.beginPath(); c.moveTo(lanesX, state.hitZoneY - HIT_W / 2); c.lineTo(lanesX + LANE_TOTAL, state.hitZoneY - HIT_W / 2); c.stroke();
+        c.beginPath(); c.moveTo(lanesX, state.hitZoneY + HIT_W / 2); c.lineTo(lanesX + LANE_TOTAL, state.hitZoneY + HIT_W / 2); c.stroke();
 
         // Target outlines + input flash
         const pressAge = Date.now() - pressRef.current.time;
