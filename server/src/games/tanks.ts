@@ -5,7 +5,7 @@ const TANK_W = 20, TANK_H = 24;
 const TURN_SPEED = 0.05;
 const MOVE_SPEED = 2.5;
 const BULLET_SPEED = 5;
-const BULLET_R = 3;
+const BULLET_R = 5;
 const FIRE_COOLDOWN = 800;
 const MAX_BOUNCES = 2;
 const TICK_RATE = 1000 / 60;
@@ -19,21 +19,14 @@ const WALLS: Wall[] = [
   { x: 0, y: H - 8, w: W, h: 8 },
   { x: 0, y: 0, w: 8, h: H },
   { x: W - 8, y: 0, w: 8, h: H },
-  // Center cross
-  { x: W / 2 - 6, y: 140, w: 12, h: 100 },
-  { x: W / 2 - 6, y: H - 240, w: 12, h: 100 },
-  { x: 250, y: H / 2 - 6, w: 120, h: 12 },
-  { x: W - 370, y: H / 2 - 6, w: 120, h: 12 },
+  // Center pillars
+  { x: W / 2 - 6, y: 160, w: 12, h: 80 },
+  { x: W / 2 - 6, y: H - 240, w: 12, h: 80 },
   // Corner blocks
-  { x: 80, y: 80, w: 60, h: 40 },
-  { x: W - 140, y: 80, w: 60, h: 40 },
-  { x: 80, y: H - 120, w: 60, h: 40 },
-  { x: W - 140, y: H - 120, w: 60, h: 40 },
-  // Mid-field cover
-  { x: 180, y: 180, w: 40, h: 40 },
-  { x: W - 220, y: 180, w: 40, h: 40 },
-  { x: 180, y: H - 220, w: 40, h: 40 },
-  { x: W - 220, y: H - 220, w: 40, h: 40 },
+  { x: 100, y: 100, w: 50, h: 35 },
+  { x: W - 150, y: 100, w: 50, h: 35 },
+  { x: 100, y: H - 135, w: 50, h: 35 },
+  { x: W - 150, y: H - 135, w: 50, h: 35 },
 ];
 
 interface Bullet {

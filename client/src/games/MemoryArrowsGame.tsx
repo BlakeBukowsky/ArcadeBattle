@@ -14,6 +14,7 @@ interface MemoryState {
   players: Record<string, PlayerState>;
   canvasWidth: number; canvasHeight: number;
   winner: string | null;
+  timeoutRemaining: number | null;
 }
 
 const ARROW_SIZE = 50;
@@ -108,9 +109,15 @@ export default function MemoryArrowsGame() {
 
       // During input/result phase — show per-player progress
       if (state.phase === 'input' || state.phase === 'result') {
-        drawLabel(c, state.phase === 'input' ? `Round ${state.round} — INPUT` : `Round ${state.round} — RESULT`, W / 2, 30, {
+        const phaseLabel = state.phase === 'input' ? `Round ${state.round} — INPUT` : `Round ${state.round} — RESULT`;
+        drawLabel(c, phaseLabel, W / 2, 30, {
           color: state.phase === 'input' ? '#00ff88' : '#ffcc00', font: '20px monospace',
         });
+        if (state.timeoutRemaining !== null && state.timeoutRemaining !== undefined) {
+          drawLabel(c, `${Math.ceil(state.timeoutRemaining)}s`, W / 2, 50, {
+            color: state.timeoutRemaining < 4 ? '#ff4444' : '#ffaa00', font: '16px monospace',
+          });
+        }
 
         pids.forEach((pid, idx) => {
           const ox = idx * HALF;
@@ -142,18 +149,20 @@ export default function MemoryArrowsGame() {
             const ax = startX + i * (arrowS + 4) + arrowS / 2;
             const dir = state.sequence[i];
 
-            if (i < p.inputIndex) {
-              // Correctly entered — show colored
+            if (isMe && i < p.inputIndex) {
+              // Your correctly entered arrows — show colored
               drawArrow(c, ax, y, arrowS, dir, DIR_COLORS[dir]);
             } else if (isMe) {
-              // Not yet entered — for local player, hide the answer
+              // Your remaining — hide
               c.fillStyle = '#ffffff11';
               c.fillRect(ax - arrowS / 2 + 2, y - arrowS / 2 + 2, arrowS - 4, arrowS - 4);
               drawLabel(c, '?', ax, y + 5, { color: '#333', font: `${Math.max(10, arrowS * 0.4)}px monospace` });
             } else {
-              // Opponent — also hide
-              c.fillStyle = '#ffffff08';
+              // Opponent — always show ? (filled = done, empty = not yet)
+              const filled = i < p.inputIndex;
+              c.fillStyle = filled ? '#ff448822' : '#ffffff08';
               c.fillRect(ax - arrowS / 2 + 2, y - arrowS / 2 + 2, arrowS - 4, arrowS - 4);
+              drawLabel(c, '?', ax, y + 5, { color: filled ? '#ff448866' : '#333', font: `${Math.max(10, arrowS * 0.4)}px monospace` });
             }
           }
 

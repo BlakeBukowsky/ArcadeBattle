@@ -7,6 +7,7 @@ const GROWTH = 1;
 const REVEAL_INTERVAL = 600; // ms per arrow during watch phase
 const PAUSE_BEFORE_INPUT = 500;
 const PAUSE_BETWEEN_ROUNDS = 1000;
+const INPUT_TIMEOUT = 10000; // 10s after first player finishes
 const TICK_RATE = 1000 / 15;
 
 interface PlayerState {
@@ -25,6 +26,7 @@ interface MemoryState {
   canvasWidth: number;
   canvasHeight: number;
   winner: string | null;
+  timeoutRemaining: number | null; // seconds remaining after first player finishes
 }
 
 export const memoryArrowsGame: ServerGameModule = {
@@ -39,6 +41,8 @@ export const memoryArrowsGame: ServerGameModule = {
     const [p1, p2] = ctx.players;
     let running = true;
     let revealTimer: ReturnType<typeof setTimeout> | null = null;
+    let inputTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+    let inputTimeoutStart: number | null = null;
 
     const state: MemoryState = {
       phase: 'watch',
@@ -52,6 +56,7 @@ export const memoryArrowsGame: ServerGameModule = {
       canvasWidth: 800,
       canvasHeight: 500,
       winner: null,
+      timeoutRemaining: null,
     };
 
     function generateSequence(length: number): Direction[] {
@@ -103,6 +108,33 @@ export const memoryArrowsGame: ServerGameModule = {
       }, REVEAL_INTERVAL);
     }
 
+    function startInputTimeout(): void {
+      if (inputTimeoutTimer) return; // already running
+      inputTimeoutStart = Date.now();
+      state.timeoutRemaining = INPUT_TIMEOUT / 1000;
+      inputTimeoutTimer = setTimeout(() => {
+        if (!running) return;
+        // Time's up — any player who hasn't finished fails
+        const alive = ctx.players.filter((pid) => state.players[pid].alive);
+        for (const pid of alive) {
+          const p = state.players[pid];
+          if (!p.completedRound && !p.failed) {
+            p.failed = true;
+          }
+        }
+        inputTimeoutTimer = null;
+        inputTimeoutStart = null;
+        state.timeoutRemaining = null;
+        resolveRound();
+      }, INPUT_TIMEOUT);
+    }
+
+    function clearInputTimeout(): void {
+      if (inputTimeoutTimer) { clearTimeout(inputTimeoutTimer); inputTimeoutTimer = null; }
+      inputTimeoutStart = null;
+      state.timeoutRemaining = null;
+    }
+
     function checkRoundEnd(): void {
       const alive = ctx.players.filter((pid) => state.players[pid].alive);
 
@@ -112,9 +144,20 @@ export const memoryArrowsGame: ServerGameModule = {
         return p.completedRound || p.failed;
       });
 
-      if (!allDone) return;
+      if (!allDone) {
+        // If one player finished, start timeout for the other
+        const anyDone = alive.some((pid) => state.players[pid].completedRound || state.players[pid].failed);
+        if (anyDone && !inputTimeoutTimer) startInputTimeout();
+        return;
+      }
 
+      clearInputTimeout();
+      resolveRound();
+    }
+
+    function resolveRound(): void {
       // Eliminate failed players
+      const alive = ctx.players.filter((pid) => state.players[pid].alive);
       for (const pid of alive) {
         if (state.players[pid].failed) {
           state.players[pid].alive = false;
@@ -124,7 +167,6 @@ export const memoryArrowsGame: ServerGameModule = {
       const remaining = ctx.players.filter((pid) => state.players[pid].alive);
 
       if (remaining.length === 0) {
-        // Both failed same round — whoever got further wins
         running = false;
         const p1Progress = state.players[p1].inputIndex;
         const p2Progress = state.players[p2].inputIndex;
@@ -137,7 +179,6 @@ export const memoryArrowsGame: ServerGameModule = {
       }
 
       if (remaining.length === 1) {
-        // One player eliminated
         running = false;
         state.winner = remaining[0];
         state.phase = 'result';
@@ -157,6 +198,10 @@ export const memoryArrowsGame: ServerGameModule = {
     // Periodic state broadcast
     const interval = setInterval(() => {
       if (!running) return;
+      // Update timeout countdown
+      if (inputTimeoutStart) {
+        state.timeoutRemaining = Math.max(0, (INPUT_TIMEOUT - (Date.now() - inputTimeoutStart)) / 1000);
+      }
       ctx.emit('game:state', state);
     }, TICK_RATE);
 
@@ -193,6 +238,7 @@ export const memoryArrowsGame: ServerGameModule = {
         running = false;
         clearInterval(interval);
         if (revealTimer) clearTimeout(revealTimer);
+        clearInputTimeout();
       },
     };
   },

@@ -139,6 +139,8 @@ function lerpState<T>(a: T, b: T, t: number): T {
       // Only lerp values that have fractional parts (positions, velocities)
       if (Number.isInteger(av) && Number.isInteger(bv)) {
         result[key] = bv; // snap
+      } else if (Math.abs(bv - av) > 200) {
+        result[key] = bv; // snap on large jumps (screen wrapping)
       } else {
         result[key] = av + (bv - av) * t; // lerp
       }

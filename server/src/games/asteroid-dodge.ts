@@ -17,6 +17,7 @@ interface Asteroid {
   x: number;
   y: number;
   r: number;
+  speedMult: number; // individual speed variation
 }
 
 interface PlayerState {
@@ -72,6 +73,7 @@ export const asteroidDodgeGame: ServerGameModule = {
         x: r + Math.random() * (HALF_W - r * 2),
         y: -r,
         r,
+        speedMult: 0.7 + Math.random() * 0.6, // 0.7x to 1.3x variation
       });
     }
 
@@ -102,7 +104,7 @@ export const asteroidDodgeGame: ServerGameModule = {
 
       // Move ALL asteroids at the SAME speed
       for (const a of state.asteroids) {
-        a.y += state.speed;
+        a.y += state.speed * a.speedMult;
       }
 
       // Remove off-screen

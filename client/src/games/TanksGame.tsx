@@ -3,7 +3,7 @@ import { useSocket, useMyId } from '../context/SocketContext.tsx';
 import { drawSprite, drawLabel, drawBackground, drawSpriteCircle } from '../lib/sprites.js';
 import { applyStateUpdate, StateBuffer } from '../lib/net.js';
 
-const TANK_W = 20, TANK_H = 24, BULLET_R = 3;
+const TANK_W = 20, TANK_H = 24, BULLET_R = 5;
 
 interface Wall { x: number; y: number; w: number; h: number; }
 interface Bullet { x: number; y: number; vx: number; vy: number; owner: string; bounces: number; }
