@@ -102,6 +102,38 @@ export function createFeedbackRouter(): Router {
     res.json(rows);
   });
 
+  // ── Activity Stats ──
+  router.get('/activity', (req, res) => {
+    if (!checkSecret(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
+
+    const matchesHour = (getDb().prepare("SELECT COUNT(*) as c FROM match_history WHERE played_at > datetime('now', '-1 hour')").get() as { c: number }).c;
+    const matchesDay = (getDb().prepare("SELECT COUNT(*) as c FROM match_history WHERE played_at > datetime('now', '-1 day')").get() as { c: number }).c;
+    const matchesWeek = (getDb().prepare("SELECT COUNT(*) as c FROM match_history WHERE played_at > datetime('now', '-7 days')").get() as { c: number }).c;
+
+    const playersHour = (getDb().prepare(`
+      SELECT COUNT(DISTINCT pid) as c FROM (
+        SELECT player1_id as pid FROM match_history WHERE played_at > datetime('now', '-1 hour')
+        UNION ALL SELECT player2_id FROM match_history WHERE played_at > datetime('now', '-1 hour')
+      )
+    `).get() as { c: number }).c;
+
+    const playersDay = (getDb().prepare(`
+      SELECT COUNT(DISTINCT pid) as c FROM (
+        SELECT player1_id as pid FROM match_history WHERE played_at > datetime('now', '-1 day')
+        UNION ALL SELECT player2_id FROM match_history WHERE played_at > datetime('now', '-1 day')
+      )
+    `).get() as { c: number }).c;
+
+    const playersWeek = (getDb().prepare(`
+      SELECT COUNT(DISTINCT pid) as c FROM (
+        SELECT player1_id as pid FROM match_history WHERE played_at > datetime('now', '-7 days')
+        UNION ALL SELECT player2_id FROM match_history WHERE played_at > datetime('now', '-7 days')
+      )
+    `).get() as { c: number }).c;
+
+    res.json({ matchesHour, matchesDay, matchesWeek, playersHour, playersDay, playersWeek });
+  });
+
   // ── Match History (per user — public, auth required) ──
   router.get('/user-matches', (req, res) => {
     const authHeader = req.headers.authorization;
@@ -149,12 +181,20 @@ h2{color:#888;margin:12px 0 8px;font-size:14px}
 </style></head><body>
 <h1>Arcade Battle Dashboard</h1>
 <div class="tabs">
-  <div class="tab active" onclick="showTab('feedback')">Feedback</div>
+  <div class="tab active" onclick="showTab('activity')">Activity</div>
+  <div class="tab" onclick="showTab('feedback')">Feedback</div>
   <div class="tab" onclick="showTab('ratings')">Ratings</div>
   <div class="tab" onclick="showTab('matches')">Match History</div>
 </div>
 
-<div id="feedback" class="panel active">
+<div id="activity" class="panel active">
+  <h2>Matches</h2>
+  <div class="stats" id="act-matches"></div>
+  <h2>Unique Players</h2>
+  <div class="stats" id="act-players"></div>
+</div>
+
+<div id="feedback" class="panel">
   <div class="stats" id="fb-stats"></div>
   <h2>All Feedback</h2>
   <div style="margin-bottom:8px"><button class="mode-btn active" onclick="loadFb('')">All</button><button class="mode-btn" onclick="loadFb('rating')">Ratings</button><button class="mode-btn" onclick="loadFb('bug_report')">Bugs</button></div>
@@ -167,12 +207,24 @@ h2{color:#888;margin:12px 0 8px;font-size:14px}
 </div>
 
 <div id="matches" class="panel">
-  <table><thead><tr><th>Player 1</th><th>Score</th><th>Player 2</th><th>Winner</th><th>Games Played</th><th>Date</th></tr></thead><tbody id="match-body"></tbody></table>
+  <table><thead><tr><th>Player 1</th><th>Score</th><th>Player 2</th><th>Winner</th><th>Set</th><th>Games Played</th><th>Date</th></tr></thead><tbody id="match-body"></tbody></table>
 </div>
 
 <script>
 const K='${key}',B='/api/feedback';
-function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');event.target.classList.add('active');if(id==='ratings')loadRatings('raw');if(id==='matches')loadMatches();}
+function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');event.target.classList.add('active');if(id==='activity')loadActivity();if(id==='feedback'){loadFbStats();loadFb('');}if(id==='ratings')loadRatings('raw');if(id==='matches')loadMatches();}
+
+async function loadActivity(){
+  const d=await(await fetch(B+'/activity?key='+K)).json();
+  document.getElementById('act-matches').innerHTML=
+    '<div class="stat"><div class="val">'+d.matchesHour+'</div><div class="label">Last Hour</div></div>'+
+    '<div class="stat"><div class="val">'+d.matchesDay+'</div><div class="label">Last 24h</div></div>'+
+    '<div class="stat"><div class="val">'+d.matchesWeek+'</div><div class="label">Last 7 Days</div></div>';
+  document.getElementById('act-players').innerHTML=
+    '<div class="stat"><div class="val">'+d.playersHour+'</div><div class="label">Last Hour</div></div>'+
+    '<div class="stat"><div class="val">'+d.playersDay+'</div><div class="label">Last 24h</div></div>'+
+    '<div class="stat"><div class="val">'+d.playersWeek+'</div><div class="label">Last 7 Days</div></div>';
+}
 
 async function loadFbStats(){
   const [ratings,bugs]=[
@@ -218,10 +270,10 @@ async function loadMatches(){
     let rounds=[];try{rounds=JSON.parse(m.rounds)}catch{}
     const games=[...new Set(rounds.map(r=>r.gameName))].join(', ');
     const isP1Win=m.winner_id===m.player1_id;
-    return '<tr><td>'+m.player1_name+'</td><td>'+m.player1_score+' - '+m.player2_score+'</td><td>'+m.player2_name+'</td><td class="'+(isP1Win?'win':'loss')+'">'+(isP1Win?m.player1_name:m.player2_name)+'</td><td>'+games+'</td><td>'+m.played_at+'</td></tr>';
+    return '<tr><td>'+m.player1_name+'</td><td>'+m.player1_score+' - '+m.player2_score+'</td><td>'+m.player2_name+'</td><td class="'+(isP1Win?'win':'loss')+'">'+(isP1Win?m.player1_name:m.player2_name)+'</td><td>'+(m.game_set||'-')+'</td><td>'+games+'</td><td>'+m.played_at+'</td></tr>';
   }).join('');
 }
 
-loadFbStats();loadFb('');
+loadActivity();
 </script></body></html>`;
 }

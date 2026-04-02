@@ -973,6 +973,15 @@
   text-align: center;
 }
 
+.match-set {
+  font-size: 0.7rem;
+  color: #888;
+  background: #ffffff0a;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid #333;
+}
+
 .match-games {
   color: #666;
   font-size: 0.75rem;

@@ -11,6 +11,7 @@ interface MatchHistoryEntry {
   winner_id: string;
   player1_score: number; player2_score: number;
   rounds: string;
+  game_set: string | null;
   played_at: string;
 }
 
@@ -177,6 +178,7 @@ export default function ProfileScreen() {
                 <span className="match-result">{won ? 'W' : 'L'}</span>
                 <span className="match-opponent">vs {oppName}</span>
                 <span className="match-score">{myScore}-{oppScore}</span>
+                {m.game_set && <span className="match-set">{m.game_set}</span>}
                 <span className="match-games">{[...new Set(games)].join(', ')}</span>
               </div>
             );
