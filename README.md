@@ -2,40 +2,48 @@
 
 A real-time 1v1 mini-game battle platform where two players compete in a series of short arcade games. Create a lobby, invite a friend, and play through randomized rounds of skill-based mini-games until someone hits the target score.
 
-## Quick Start (Local Dev)
+> Licensed under [MIT](LICENSE). Self-hosting friendly — see below.
+
+## Getting Started
+
+Requirements: Node.js 20+ and npm 10+.
 
 ```bash
+git clone https://github.com/<your-fork>/ArcadeBattle.git
+cd ArcadeBattle
 npm install
+cp .env.example .env       # Windows: copy .env.example .env
 npm run dev
 ```
 
 - Client: http://localhost:5173
 - Server: http://localhost:3001
 
-Open two browser tabs, create a lobby in one, copy the invite link to the other, ready up, and play.
+Open two browser tabs, create a lobby in one, copy the invite link to the other, ready up, and play. You can play as a guest with no setup; magic-link sign-in only requires `RESEND_API_KEY` (see below).
 
-## Deployment (Railway)
+## Configuration
 
-Single Railway service — Express serves both the Socket.IO API and the built React client.
+All config is via environment variables — see [`.env.example`](.env.example).
+
+| Var | Required | Notes |
+|-----|----------|-------|
+| `JWT_SECRET` | Yes (prod) | Random string; signs session tokens. The placeholder is fine for local dev. |
+| `RESEND_API_KEY` | For sign-in | Get one free at [resend.com](https://resend.com). Without it, sign-in is disabled but guests still work. |
+| `RESEND_FROM` | For sign-in | E.g. `noreply@yourdomain.com`. In dev you can use `onboarding@resend.dev`, which only delivers to the email on your Resend account. |
+| `CLIENT_URL` | No | Defaults to `http://localhost:5173`. Set to your prod domain if client and server are split. |
+| `SERVER_URL` | No | Defaults to `http://localhost:3001`. On Railway, `RAILWAY_PUBLIC_DOMAIN` is auto-detected. |
+| `FEEDBACK_SECRET` | No | Set this to enable the `/api/feedback/view?key=…` admin dashboard. |
+
+## Deployment
+
+Single service — Express serves both the Socket.IO API and the built React client. Anywhere that runs Node will work; the project is set up for Railway out of the box.
 
 ```bash
-npm run build   # Builds the React client
-npm run start   # Starts the production server
+npm run build   # Builds the React client into client/dist
+npm run start   # Starts the production server (serves the built client)
 ```
 
-**Required env vars:**
-- `NODE_ENV=production`
-- `JWT_SECRET` — any random string
-- `SERVER_URL` — your Railway domain (e.g., `https://your-app.up.railway.app`)
-
-**For magic-link sign-in:**
-- `RESEND_API_KEY` — from https://resend.com
-- `RESEND_FROM` — sender address (e.g., `noreply@yourdomain.com`; verified domain required for production)
-
-**Optional:**
-- `FEEDBACK_SECRET` — for the admin dashboard
-
-See `.env.example` for all options.
+In production, set `NODE_ENV=production` and at minimum `JWT_SECRET`. The server enables `trust proxy` so per-IP rate limiting works behind a reverse proxy.
 
 ## How It Works
 
@@ -70,7 +78,7 @@ ArcadeBattle/
 │   └── src/
 │       ├── index.ts         # Server entry, socket events, static file serving
 │       ├── db.ts            # SQLite (users, magic links, feedback, match history)
-│       ├── auth.ts          # OAuth (Google, Discord), JWT, profile, avatar upload
+│       ├── auth.ts          # Magic-link email auth (Resend), JWT, profile, avatar upload
 │       ├── feedback.ts      # Feedback API + admin dashboard
 │       ├── middleware.ts     # Socket.IO auth, UserSocketMap
 │       ├── lobby.ts         # Lobby management
@@ -104,7 +112,7 @@ ArcadeBattle/
 | Frontend | React 19, Vite, TypeScript |
 | Backend | Node.js, Express 5, Socket.IO |
 | Database | SQLite (better-sqlite3) |
-| Auth | OAuth 2.0 (Google, Discord), JWT |
+| Auth | Magic-link email (Resend) + JWT |
 | Networking | WebSockets — server-authoritative, delta-compressed, 45fps |
 | Rendering | HTML5 Canvas with sprite system + skin support |
 | Deployment | Railway (single service) |

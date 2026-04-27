@@ -27,8 +27,8 @@ Types and constants shared between client and server.
 
 ### `server/`
 - **`index.ts`** — Express + Socket.IO setup, event routing, static file serving, match history saving
-- **`db.ts`** — SQLite: users, OAuth accounts, feedback, match history
-- **`auth.ts`** — OAuth (Google, Discord), JWT, profile API, avatar upload
+- **`db.ts`** — SQLite: users, magic-link tokens, feedback, match history
+- **`auth.ts`** — Magic-link email auth (Resend), JWT, profile API, avatar upload
 - **`feedback.ts`** — Feedback API (ratings, bug reports) + admin dashboard with tabs (Activity, Feedback, Ratings, Match History)
 - **`middleware.ts`** — Socket.IO auth middleware, `UserSocketMap`
 - **`lobby.ts`** — Lobby management with reconnection grace period
@@ -37,7 +37,7 @@ Types and constants shared between client and server.
 - **`games/`** — 23 game modules + registry + 4 game sets
 
 ### `client/`
-- **`context/AuthContext.tsx`** — OAuth popup flow, JWT storage, profile/avatar updates
+- **`context/AuthContext.tsx`** — Magic-link request flow, JWT storage, profile/avatar updates
 - **`context/SocketContext.tsx`** — Socket.IO connection with auth, guest ID persistence, `useMyId()` hook
 - **`context/GameContext.tsx`** — UI state: screens, lobby state, match data
 - **`screens/`** — Home, Profile, Lobby, LobbyNotFound, Transition, Playing, GameOver
@@ -49,11 +49,13 @@ Types and constants shared between client and server.
 ## Authentication
 
 ### Identity Model
-- **Authenticated users** — Google/Discord OAuth, persistent userId in SQLite, customizable name/avatar
+- **Authenticated users** — Magic-link email sign-in, persistent userId in SQLite, customizable name/avatar
 - **Guests** — Auto-generated `guest_xxx` ID stored in `localStorage`, persists across browser sessions
 
-### OAuth Flow
-Popup-based: client opens popup → server redirects to provider → callback exchanges code → JWT issued via `postMessage` → popup closes → client stores JWT → socket reconnects with token.
+### Magic-Link Flow
+Client `POST /auth/magic-link` with email → server stores a one-time token (15 min TTL) and emails the link via Resend → user clicks `GET /auth/verify?token=…` → server consumes the token, finds-or-creates the user by email, signs a JWT, and redirects to `/auth/callback#token=…` (fragment, so the JWT never appears in HTTP referer headers or proxy logs) → client stores the JWT and socket reconnects with it.
+
+The `/auth/magic-link` endpoint is rate-limited to 5 requests per minute per IP.
 
 ### Profile
 Authenticated users can update display name and upload avatar images (resized to 256x256 client-side, validated server-side, stored at `/avatars/`).
@@ -163,8 +165,8 @@ Background system: `drawBackground(ctx, 'pong', W, H, { color, scrollX, parallax
 ## Database Schema
 
 ```sql
-users (id, display_name, avatar_url, created_at)
-oauth_accounts (provider, provider_id, user_id, email, PK(provider, provider_id))
+users (id, display_name, avatar_url, email UNIQUE, created_at)
+magic_links (token PK, email, expires_at, used, created_at)
 feedback (id, type, user_id, game_id, game_name, round_number, rating, message, lobby_id, created_at)
 match_history (id, lobby_id, player1_id/name, player2_id/name, winner_id, scores, rounds JSON, game_set, played_at)
 ```
@@ -188,7 +190,8 @@ match_history (id, lobby_id, player1_id/name, player2_id/name, winner_id, scores
 - Catch-all route `{*path}` serves `index.html` for client-side routing
 - Socket.IO same-origin, no CORS needed
 - SQLite at `server/data/arcade-battle.db` (auto-created)
-- `RAILWAY_PUBLIC_DOMAIN` auto-detected for OAuth callbacks
+- `RAILWAY_PUBLIC_DOMAIN` auto-detected as `SERVER_URL` when running on Railway
+- `app.set('trust proxy', 1)` is enabled in production so per-IP rate limiting sees the real client IP behind the Railway proxy
 - Users auto-recreated from valid JWT if DB was wiped (Railway redeploys)
 
 ## Multiple Layouts

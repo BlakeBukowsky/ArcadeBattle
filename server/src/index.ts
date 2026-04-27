@@ -21,6 +21,9 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 const app = express();
+// Trust the immediate proxy (Railway/Render/etc.) so req.ip reflects the real client IP
+// — required for the rate limiter on /auth/magic-link to work per-user.
+if (IS_PROD) app.set('trust proxy', 1);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: IS_PROD

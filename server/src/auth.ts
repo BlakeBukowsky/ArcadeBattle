@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Resend } from 'resend';
+import rateLimit from 'express-rate-limit';
 import {
   findUserById,
   findUserByEmail,
@@ -96,12 +97,20 @@ async function sendMagicLinkEmail(email: string, link: string): Promise<void> {
 
 // ── Router ──
 
+const magicLinkLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many sign-in requests. Please wait a minute.' },
+});
+
 export function createAuthRouter(): Router {
   const router = Router();
 
   // ── Magic Link: Request ──
 
-  router.post('/magic-link', express.json(), async (req, res) => {
+  router.post('/magic-link', magicLinkLimiter, express.json(), async (req, res) => {
     const { email } = req.body as { email?: string };
     const normalized = typeof email === 'string' ? email.trim().toLowerCase() : '';
 

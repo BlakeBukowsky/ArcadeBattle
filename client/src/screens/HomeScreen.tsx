@@ -74,7 +74,7 @@ export default function HomeScreen() {
                 required
                 disabled={status === 'sending'}
               />
-              <button className="btn btn-oauth" type="submit" disabled={status === 'sending' || !email}>
+              <button className="btn btn-magic" type="submit" disabled={status === 'sending' || !email}>
                 {status === 'sending' ? 'Sending…' : 'Send Sign-In Link'}
               </button>
             </div>

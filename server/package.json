@@ -12,6 +12,7 @@
     "@arcade-battle/shared": "*",
     "better-sqlite3": "^12.8.0",
     "express": "^5.0.1",
+    "express-rate-limit": "^8.4.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "nanoid": "^5.1.0",
