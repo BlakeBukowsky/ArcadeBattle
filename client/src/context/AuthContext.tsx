@@ -8,7 +8,8 @@ interface AuthContextValue {
   user: AuthUser | null;        // null = not yet identified (loading or pre-connect)
   token: string | null;
   isLoading: boolean;
-  login: (provider: 'google' | 'discord') => void;
+  requestMagicLink: (email: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  consumeAuthToken: (newToken: string) => Promise<void>;
   logout: () => void;
   updateProfile: (displayName: string, avatarUrl?: string) => Promise<boolean>;
   uploadAvatar: (file: File) => Promise<string | null>;
@@ -51,41 +52,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  // Listen for OAuth popup postMessage
-  useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      if (event.data?.type !== 'auth:token') return;
-      // In production, client and server share an origin. In dev, accept from the dev server.
-      const allowedOrigins = [window.location.origin, SERVER_URL];
-      if (!allowedOrigins.includes(event.origin) && event.origin !== '') return;
-      {
-        const newToken = event.data.token as string;
-        localStorage.setItem(TOKEN_KEY, newToken);
-        setToken(newToken);
-
-        // Fetch user profile
-        fetch(`${SERVER_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${newToken}` },
-        })
-          .then((res) => res.json())
-          .then((data: AuthUser) => setUser(data))
-          .catch(console.error);
-      }
+  const consumeAuthToken = useCallback(async (newToken: string) => {
+    localStorage.setItem(TOKEN_KEY, newToken);
+    setToken(newToken);
+    try {
+      const res = await fetch(`${SERVER_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${newToken}` },
+      });
+      if (!res.ok) throw new Error('Token rejected');
+      const data = await res.json() as AuthUser;
+      setUser(data);
+    } catch (err) {
+      console.error(err);
+      localStorage.removeItem(TOKEN_KEY);
+      setToken(null);
+      setUser(null);
     }
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const login = useCallback((provider: 'google' | 'discord') => {
-    const width = 500, height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    window.open(
-      `${SERVER_URL}/auth/${provider}`,
-      'oauth-popup',
-      `width=${width},height=${height},left=${left},top=${top}`,
-    );
+  const requestMagicLink = useCallback(async (email: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+    try {
+      const res = await fetch(`${SERVER_URL}/auth/magic-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        return { ok: false, error: data.error || 'Failed to send sign-in email' };
+      }
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Network error — please try again' };
+    }
   }, []);
 
   const logout = useCallback(() => {
@@ -139,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateProfile, uploadAvatar }}>
+    <AuthContext.Provider value={{ user, token, isLoading, requestMagicLink, consumeAuthToken, logout, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );

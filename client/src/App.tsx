@@ -10,6 +10,7 @@ import TransitionScreen from './screens/TransitionScreen.tsx';
 import PlayingScreen from './screens/PlayingScreen.tsx';
 import GameOverScreen from './screens/GameOverScreen.tsx';
 import ProfileScreen from './screens/ProfileScreen.tsx';
+import AuthCallbackScreen from './screens/AuthCallbackScreen.tsx';
 import './App.css';
 
 function AppRoutes() {
@@ -85,6 +86,7 @@ function App() {
     <GameProvider>
       <Routes>
         <Route path="/lobby/:lobbyId" element={<LobbyJoinHandler />} />
+        <Route path="/auth/callback" element={<AuthCallbackScreen />} />
         <Route path="*" element={<AppRoutes />} />
       </Routes>
     </GameProvider>

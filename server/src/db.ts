@@ -21,19 +21,19 @@ export function initDatabase(): Database.Database {
       id TEXT PRIMARY KEY,
       display_name TEXT NOT NULL,
       avatar_url TEXT,
+      email TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS oauth_accounts (
-      provider TEXT NOT NULL,
-      provider_id TEXT NOT NULL,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      email TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      PRIMARY KEY (provider, provider_id)
+    CREATE TABLE IF NOT EXISTS magic_links (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE INDEX IF NOT EXISTS idx_oauth_user ON oauth_accounts(user_id);
+    CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
 
     CREATE TABLE IF NOT EXISTS feedback (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,6 +71,18 @@ export function initDatabase(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_match_played ON match_history(played_at);
   `);
 
+  // Migrate older databases: add email column to users if missing
+  const userCols = db.prepare(`PRAGMA table_info(users)`).all() as { name: string }[];
+  if (!userCols.some((c) => c.name === 'email')) {
+    db.exec(`ALTER TABLE users ADD COLUMN email TEXT`);
+  }
+
+  // Drop legacy OAuth table if present
+  db.exec(`DROP TABLE IF EXISTS oauth_accounts`);
+
+  // Unique-when-present index on email
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL`);
+
   return db;
 }
 
@@ -83,37 +95,19 @@ export interface DbUser {
   id: string;
   display_name: string;
   avatar_url: string | null;
+  email: string | null;
   created_at: string;
 }
 
-export function findUserByOAuth(provider: string, providerId: string): DbUser | undefined {
-  const row = getDb().prepare(`
-    SELECT u.* FROM users u
-    JOIN oauth_accounts oa ON oa.user_id = u.id
-    WHERE oa.provider = ? AND oa.provider_id = ?
-  `).get(provider, providerId) as DbUser | undefined;
-  return row;
+export function findUserByEmail(email: string): DbUser | undefined {
+  return getDb().prepare(`SELECT * FROM users WHERE email = ?`).get(email) as DbUser | undefined;
 }
 
-export function createUserWithOAuth(
-  provider: string,
-  providerId: string,
-  email: string | null,
-  displayName: string,
-  avatarUrl: string | null,
-): DbUser {
+export function createUserWithEmail(email: string, displayName: string): DbUser {
   const userId = nanoid(12);
-  const insert = getDb().transaction(() => {
-    getDb().prepare(`
-      INSERT INTO users (id, display_name, avatar_url) VALUES (?, ?, ?)
-    `).run(userId, displayName, avatarUrl);
-
-    getDb().prepare(`
-      INSERT INTO oauth_accounts (provider, provider_id, user_id, email) VALUES (?, ?, ?, ?)
-    `).run(provider, providerId, userId, email);
-  });
-  insert();
-
+  getDb().prepare(`
+    INSERT INTO users (id, display_name, email) VALUES (?, ?, ?)
+  `).run(userId, displayName, email);
   return findUserById(userId)!;
 }
 
@@ -166,13 +160,28 @@ export function getMatchesForUser(userId: string, limit = 20): unknown[] {
   `).all(userId, userId, limit);
 }
 
-export function linkOAuthAccount(
-  userId: string,
-  provider: string,
-  providerId: string,
-  email: string | null,
-): void {
+export function createMagicLink(token: string, email: string, expiresAt: number): void {
   getDb().prepare(`
-    INSERT OR IGNORE INTO oauth_accounts (provider, provider_id, user_id, email) VALUES (?, ?, ?, ?)
-  `).run(provider, providerId, userId, email);
+    INSERT INTO magic_links (token, email, expires_at) VALUES (?, ?, ?)
+  `).run(token, email, expiresAt);
+}
+
+/**
+ * Atomically consume a magic-link token. Returns the email if the token is valid,
+ * unused, and unexpired; otherwise returns null. Marks the token as used on success.
+ */
+export function consumeMagicLink(token: string): string | null {
+  const consume = getDb().transaction(() => {
+    const row = getDb().prepare(`
+      SELECT email, expires_at, used FROM magic_links WHERE token = ?
+    `).get(token) as { email: string; expires_at: number; used: number } | undefined;
+
+    if (!row) return null;
+    if (row.used) return null;
+    if (row.expires_at < Date.now()) return null;
+
+    getDb().prepare(`UPDATE magic_links SET used = 1 WHERE token = ?`).run(token);
+    return row.email;
+  });
+  return consume();
 }

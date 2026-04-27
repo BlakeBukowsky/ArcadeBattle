@@ -28,9 +28,11 @@ npm run start   # Starts the production server
 - `JWT_SECRET` — any random string
 - `SERVER_URL` — your Railway domain (e.g., `https://your-app.up.railway.app`)
 
-**Optional (for OAuth):**
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-- `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`
+**For magic-link sign-in:**
+- `RESEND_API_KEY` — from https://resend.com
+- `RESEND_FROM` — sender address (e.g., `noreply@yourdomain.com`; verified domain required for production)
+
+**Optional:**
 - `FEEDBACK_SECRET` — for the admin dashboard
 
 See `.env.example` for all options.
@@ -47,7 +49,7 @@ See `.env.example` for all options.
 
 ## Accounts
 
-Optional — guests can play without signing in. Sign in with Google or Discord for:
+Optional — guests can play without signing in. Sign in with a magic link sent to your email for:
 - Persistent identity across sessions
 - Customizable display name and avatar (Profile page with upload)
 - Match history on Profile page
@@ -67,7 +69,7 @@ ArcadeBattle/
 ├── server/                  # Node.js + Express + Socket.IO
 │   └── src/
 │       ├── index.ts         # Server entry, socket events, static file serving
-│       ├── db.ts            # SQLite (users, OAuth, feedback, match history)
+│       ├── db.ts            # SQLite (users, magic links, feedback, match history)
 │       ├── auth.ts          # OAuth (Google, Discord), JWT, profile, avatar upload
 │       ├── feedback.ts      # Feedback API + admin dashboard
 │       ├── middleware.ts     # Socket.IO auth, UserSocketMap

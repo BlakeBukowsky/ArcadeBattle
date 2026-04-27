@@ -1,10 +1,20 @@
 import express, { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { findUserByOAuth, createUserWithOAuth, findUserById, updateUser, ensureUserExists } from './db.js';
+import { Resend } from 'resend';
+import {
+  findUserById,
+  findUserByEmail,
+  createUserWithEmail,
+  updateUser,
+  ensureUserExists,
+  createMagicLink,
+  consumeMagicLink,
+} from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AVATARS_DIR = path.join(__dirname, '..', 'data', 'avatars');
@@ -46,27 +56,42 @@ export function verifyToken(token: string): { sub: string } | null {
   }
 }
 
-// ── OAuth callback HTML ──
+// ── Magic-link email ──
 
-function callbackHtml(token: string): string {
-  // Use opener's own origin as the postMessage target so it works regardless of domain config
-  return `<!DOCTYPE html><html><body><script>
-    try {
-      var target = window.opener ? window.opener.location.origin : '*';
-      window.opener.postMessage({ type: 'auth:token', token: '${token}' }, target);
-    } catch(e) {
-      // Cross-origin — fall back to '*' (safe here since token is only useful for our API)
-      window.opener.postMessage({ type: 'auth:token', token: '${token}' }, '*');
-    }
-    window.close();
-  </script><p>Signing in... you can close this window.</p></body></html>`;
+const MAGIC_LINK_TTL_MS = 15 * 60 * 1000;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  if (!resendClient) {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) throw new Error('RESEND_API_KEY is not set');
+    resendClient = new Resend(key);
+  }
+  return resendClient;
 }
 
-function errorHtml(message: string): string {
-  return `<!DOCTYPE html><html><body><script>
-    window.opener.postMessage({ type: 'auth:error', message: '${message}' }, '${CLIENT_URL}');
-    window.close();
-  </script><p>Error: ${message}</p></body></html>`;
+function displayNameFromEmail(email: string): string {
+  return email.split('@')[0].slice(0, 30) || 'Player';
+}
+
+async function sendMagicLinkEmail(email: string, link: string): Promise<void> {
+  const from = process.env.RESEND_FROM || 'onboarding@resend.dev';
+  await getResend().emails.send({
+    from,
+    to: email,
+    subject: 'Sign in to Arcade Battle',
+    text: `Click the link below to sign in to Arcade Battle. It expires in 15 minutes.\n\n${link}\n\nIf you didn't request this, you can ignore this email.`,
+    html: `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#222">
+      <h2 style="margin:0 0 16px">Sign in to Arcade Battle</h2>
+      <p>Click the button below to sign in. The link expires in 15 minutes.</p>
+      <p style="margin:24px 0">
+        <a href="${link}" style="display:inline-block;padding:12px 20px;background:#00ff88;color:#000;text-decoration:none;border-radius:6px;font-weight:600">Sign in</a>
+      </p>
+      <p style="font-size:12px;color:#666">Or paste this URL into your browser:<br><span style="word-break:break-all">${link}</span></p>
+      <p style="font-size:12px;color:#666">If you didn't request this, you can ignore this email.</p>
+    </div>`,
+  });
 }
 
 // ── Router ──
@@ -74,117 +99,46 @@ function errorHtml(message: string): string {
 export function createAuthRouter(): Router {
   const router = Router();
 
-  // ── Google OAuth ──
+  // ── Magic Link: Request ──
 
-  router.get('/google', (_req, res) => {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    if (!clientId) { res.status(500).send('Google OAuth not configured'); return; }
+  router.post('/magic-link', express.json(), async (req, res) => {
+    const { email } = req.body as { email?: string };
+    const normalized = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: `${SERVER_URL}/auth/google/callback`,
-      response_type: 'code',
-      scope: 'openid profile email',
-      prompt: 'select_account',
-    });
-    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
-  });
-
-  router.get('/google/callback', async (req, res) => {
-    const code = req.query.code as string;
-    if (!code) { res.send(errorHtml('No authorization code')); return; }
+    if (!EMAIL_RE.test(normalized) || normalized.length > 254) {
+      res.status(400).json({ error: 'Please enter a valid email address' });
+      return;
+    }
 
     try {
-      // Exchange code for tokens
-      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          code,
-          client_id: process.env.GOOGLE_CLIENT_ID!,
-          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-          redirect_uri: `${SERVER_URL}/auth/google/callback`,
-          grant_type: 'authorization_code',
-        }),
-      });
-      const tokens = await tokenRes.json() as { access_token: string };
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = Date.now() + MAGIC_LINK_TTL_MS;
+      createMagicLink(token, normalized, expiresAt);
 
-      // Fetch profile
-      const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { Authorization: `Bearer ${tokens.access_token}` },
-      });
-      const profile = await profileRes.json() as { id: string; name: string; email: string; picture: string };
+      const link = `${SERVER_URL}/auth/verify?token=${token}`;
+      await sendMagicLinkEmail(normalized, link);
 
-      // Find or create user
-      let user = findUserByOAuth('google', profile.id);
-      if (!user) {
-        user = createUserWithOAuth('google', profile.id, profile.email, profile.name, profile.picture);
-      }
-
-      const token = signToken(user.id);
-      res.send(callbackHtml(token));
+      res.json({ ok: true });
     } catch (err) {
-      console.error('Google OAuth error:', err);
-      res.send(errorHtml('Authentication failed'));
+      console.error('Magic link send error:', err);
+      res.status(500).json({ error: 'Failed to send sign-in email' });
     }
   });
 
-  // ── Discord OAuth ──
+  // ── Magic Link: Verify ──
 
-  router.get('/discord', (_req, res) => {
-    const clientId = process.env.DISCORD_CLIENT_ID;
-    if (!clientId) { res.status(500).send('Discord OAuth not configured'); return; }
+  router.get('/verify', (req, res) => {
+    const token = req.query.token as string | undefined;
+    if (!token) { res.redirect(`${CLIENT_URL}/auth/callback#error=invalid`); return; }
 
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: `${SERVER_URL}/auth/discord/callback`,
-      response_type: 'code',
-      scope: 'identify email',
-    });
-    res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
-  });
+    const email = consumeMagicLink(token);
+    if (!email) { res.redirect(`${CLIENT_URL}/auth/callback#error=expired`); return; }
 
-  router.get('/discord/callback', async (req, res) => {
-    const code = req.query.code as string;
-    if (!code) { res.send(errorHtml('No authorization code')); return; }
+    const user = findUserByEmail(email) ?? createUserWithEmail(email, displayNameFromEmail(email));
+    const jwtToken = signToken(user.id);
 
-    try {
-      // Exchange code for tokens
-      const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          code,
-          client_id: process.env.DISCORD_CLIENT_ID!,
-          client_secret: process.env.DISCORD_CLIENT_SECRET!,
-          redirect_uri: `${SERVER_URL}/auth/discord/callback`,
-          grant_type: 'authorization_code',
-        }),
-      });
-      const tokens = await tokenRes.json() as { access_token: string };
-
-      // Fetch profile
-      const profileRes = await fetch('https://discord.com/api/users/@me', {
-        headers: { Authorization: `Bearer ${tokens.access_token}` },
-      });
-      const profile = await profileRes.json() as { id: string; username: string; email?: string; avatar?: string };
-
-      const avatarUrl = profile.avatar
-        ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-        : null;
-
-      // Find or create user
-      let user = findUserByOAuth('discord', profile.id);
-      if (!user) {
-        user = createUserWithOAuth('discord', profile.id, profile.email ?? null, profile.username, avatarUrl);
-      }
-
-      const token = signToken(user.id);
-      res.send(callbackHtml(token));
-    } catch (err) {
-      console.error('Discord OAuth error:', err);
-      res.send(errorHtml('Authentication failed'));
-    }
+    // Fragment, not query, so the JWT isn't sent in Referer headers or server logs
+    res.redirect(`${CLIENT_URL}/auth/callback#token=${jwtToken}`);
   });
 
   // ── Current User ──

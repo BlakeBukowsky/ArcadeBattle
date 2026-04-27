@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSocket } from '../context/SocketContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useGame } from '../context/GameContext.tsx';
@@ -5,15 +6,33 @@ import { useNavigate } from 'react-router-dom';
 
 export default function HomeScreen() {
   const socket = useSocket();
-  const { user, login, logout } = useAuth();
+  const { user, requestMagicLink, logout } = useAuth();
   const game = useGame();
   const navigate = useNavigate();
+
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [error, setError] = useState<string | null>(null);
 
   function handleCreateLobby() {
     socket.emit('lobby:create', (lobbyId: string) => {
       game.setScreen('lobby');
       navigate(`/lobby/${lobbyId}`);
     });
+  }
+
+  async function handleSendLink(e: React.FormEvent) {
+    e.preventDefault();
+    if (status === 'sending') return;
+    setStatus('sending');
+    setError(null);
+    const result = await requestMagicLink(email);
+    if (result.ok) {
+      setStatus('sent');
+    } else {
+      setStatus('idle');
+      setError(result.error);
+    }
   }
 
   return (
@@ -32,18 +51,35 @@ export default function HomeScreen() {
             <button className="btn btn-small" onClick={() => game.setScreen('profile')}>Profile</button>
             <button className="btn btn-small" onClick={logout}>Sign Out</button>
           </div>
-        ) : (
+        ) : status === 'sent' ? (
           <div className="sign-in-options">
+            <p className="sign-in-label">Check your inbox for a sign-in link.</p>
+            <button
+              className="btn btn-small"
+              onClick={() => { setStatus('idle'); setEmail(''); }}
+            >
+              Use a different email
+            </button>
+          </div>
+        ) : (
+          <form className="sign-in-options" onSubmit={handleSendLink}>
             <p className="sign-in-label">Sign in for a persistent identity</p>
             <div className="sign-in-buttons">
-              <button className="btn btn-oauth" onClick={() => login('google')}>
-                Sign in with Google
-              </button>
-              <button className="btn btn-oauth" onClick={() => login('discord')}>
-                Sign in with Discord
+              <input
+                type="email"
+                className="email-input"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={status === 'sending'}
+              />
+              <button className="btn btn-oauth" type="submit" disabled={status === 'sending' || !email}>
+                {status === 'sending' ? 'Sending…' : 'Send Sign-In Link'}
               </button>
             </div>
-          </div>
+            {error && <p className="sign-in-error">{error}</p>}
+          </form>
         )}
       </div>
     </div>

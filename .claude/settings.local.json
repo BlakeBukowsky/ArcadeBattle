@@ -12,7 +12,8 @@
       "Bash(git -C C:/Users/blake/Code/ArcadeBattle remote -v)",
       "Bash(npm run:*)",
       "Bash(grep -A1 \"description:\" *.ts)",
-      "Bash(grep -v \"^--$\")"
+      "Bash(grep -v \"^--$\")",
+      "Bash(xargs cat *)"
     ]
   }
 }
