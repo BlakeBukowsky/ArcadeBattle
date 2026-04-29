@@ -46,14 +46,11 @@
 /* ── Auth Card ── */
 
 .auth-card {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
+  padding-top: 1.25rem;
   width: 100%;
-  max-width: 380px;
-  background: #14142a;
-  border: 1px solid #2a2a44;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
+  max-width: 360px;
+  border-top: 1px solid #222;
 }
 
 .user-info {
@@ -85,32 +82,33 @@
 }
 
 .sign-in-heading {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #f0f0f0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #aaa;
   margin: 0;
   text-align: center;
+  letter-spacing: 0.02em;
 }
 
 .sign-in-body {
-  font-size: 0.85rem;
-  color: #888;
+  font-size: 0.8rem;
+  color: #666;
   margin: 0 0 0.25rem;
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .email-input {
   width: 100%;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #0e0e1c;
-  color: #fff;
-  font-size: 0.95rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #2a2a3e;
+  border-radius: 6px;
+  background: #14142a;
+  color: #ddd;
+  font-size: 0.85rem;
   font-family: inherit;
   box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s;
 }
 
 .email-input::placeholder {
@@ -119,8 +117,7 @@
 
 .email-input:focus {
   outline: none;
-  border-color: #00ff88;
-  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.15);
+  border-color: #444;
 }
 
 .email-input:disabled {
@@ -129,22 +126,21 @@
 
 .btn-magic {
   width: 100%;
-  padding: 0.7rem 1rem;
-  border: 1px solid rgba(0, 255, 136, 0.4);
-  border-radius: 8px;
-  background: rgba(0, 255, 136, 0.08);
-  color: #00ff88;
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border: 1px solid #2a2a3e;
+  border-radius: 6px;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.85rem;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .btn-magic:hover:not(:disabled) {
-  background: rgba(0, 255, 136, 0.16);
-  border-color: #00ff88;
-  color: #fff;
+  border-color: #444;
+  color: #ddd;
 }
 
 .btn-magic:disabled {
@@ -169,9 +165,9 @@
 }
 
 .sign-in-icon {
-  width: 40px;
-  height: 40px;
-  color: #00ff88;
+  width: 28px;
+  height: 28px;
+  color: #666;
   margin-bottom: 0.25rem;
 }
 
@@ -194,7 +190,7 @@
 }
 
 .link-button:hover {
-  color: #00ff88;
+  color: #aaa;
 }
 
 /* ── Buttons ── */
